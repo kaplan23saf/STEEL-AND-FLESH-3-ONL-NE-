@@ -3,71 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elazığ Cephesi v3 - Komutan</title>
+    <title>Elazığ Cephesi v4 - Kesin Çözüm</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #001219; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
         
-        /* Bildirimler */
+        /* Bildirim Paneli */
         #notification-container {
-            position: fixed; top: 20px; right: 20px; width: 300px; z-index: 10000;
+            position: fixed; top: 70px; right: 20px; width: 300px; z-index: 9999;
             display: flex; flex-direction: column; gap: 10px; pointer-events: none;
         }
         .notif {
-            background: rgba(0, 18, 25, 0.95); border-left: 4px solid #2ecc71;
-            padding: 15px; font-size: 13px; border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28), fadeOut 0.5s 4.5s forwards;
-            color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71;
+            padding: 15px; font-size: 13px; border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out, fadeOut 0.5s 4.5s forwards;
         }
 
+        /* Üst Panel */
         #ui-top {
-            position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85);
-            padding: 12px; text-align: center; z-index: 2000; border-bottom: 2px solid #2ecc71;
-            font-weight: bold; letter-spacing: 1px;
+            position: fixed; top: 0; width: 100%; background: #111;
+            padding: 15px; text-align: center; z-index: 3000; border-bottom: 2px solid #2ecc71;
         }
 
-        /* Dinamik Klan Listesi */
+        /* Klan Listesi */
         #clan-list {
-            position: fixed; left: 20px; top: 70px; width: 240px;
-            background: rgba(10, 10, 10, 0.9); border: 1px solid #2ecc71;
-            padding: 15px; border-radius: 10px; z-index: 2000;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            position: fixed; left: 20px; top: 80px; width: 220px;
+            background: rgba(20, 20, 20, 0.95); border: 1px solid #2ecc71;
+            padding: 15px; border-radius: 10px; z-index: 3000;
         }
-        #clan-toggle-btn { cursor: pointer; color: #2ecc71; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; text-transform: uppercase; }
-        #clans-container { max-height: 400px; overflow-y: auto; }
+        #clans-container { max-height: 300px; overflow-y: auto; margin-top: 10px; }
 
         /* İnşa Menüsü */
         #build-menu { 
             position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            background: #0a0a0a; border: 3px solid #2ecc71; padding: 30px;
+            background: #000; border: 3px solid #2ecc71; padding: 30px;
             z-index: 5000; display: none; border-radius: 20px; text-align: center;
         }
-        .build-btn { display: block; width: 240px; padding: 12px; margin: 10px auto; background: #1a1a1a; border: 1px solid #2ecc71; color: #2ecc71; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .build-btn:hover { background: #2ecc71; color: #000; }
+        .build-btn { display: block; width: 220px; padding: 12px; margin: 10px auto; background: #222; border: 1px solid #2ecc71; color: #2ecc71; cursor: pointer; font-weight: bold; border-radius: 5px; }
 
-        /* Harita ve Motor */
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; scroll-behavior: smooth; }
-        #map { width: 15000px; height: 8000px; position: relative; }
+        /* Oyun Alanı */
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
+        #map { width: 15000px; height: 8000px; position: relative; background: #000; }
         #map-img { width: 100%; height: 100%; display: block; opacity: 0.8; }
         
+        /* Oyuncu */
         #player { 
-            position: absolute; width: 30px; height: 30px; 
-            display: none; flex-direction: column; align-items: center; z-index: 1000; cursor: pointer;
+            position: absolute; width: 40px; height: 40px; 
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; cursor: pointer; transform: translate(-20px, -20px);
         }
-        .name-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 4px; border: 1px solid rgba(255,255,255,0.4); text-shadow: 1px 1px 2px #000; }
+        .name-tag { font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: bold; margin-top: 2px; border: 1px solid white; white-space: nowrap; }
 
-        /* Yapılar */
-        .structure-item { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; pointer-events: none; }
-        .s-icon { font-size: 22px; filter: drop-shadow(0 0 5px rgba(0,0,0,1)); }
-        .s-tag { font-size: 9px; background: rgba(0,0,0,0.85); padding: 2px 4px; border-radius: 3px; border: 1px solid; margin-top: 2px; white-space: nowrap; }
+        /* YAPI GÖRÜNÜMÜ (Düzeltildi) */
+        .structure-item { 
+            position: absolute; width: 60px; height: 60px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 1000; transform: translate(-30px, -30px);
+        }
+        .s-icon { font-size: 30px; line-height: 1; }
+        .s-tag { 
+            font-size: 10px; background: rgba(0,0,0,0.8); padding: 2px 5px; 
+            border-radius: 3px; border: 1px solid; margin-top: 4px; color: #fff;
+            white-space: nowrap;
+        }
 
-        #login { position: fixed; inset: 0; background: radial-gradient(circle, #1b4332 0%, #081c15 100%); z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input, select { padding: 15px; margin-bottom: 15px; width: 300px; background: rgba(0,0,0,0.7); color: #fff; border: 2px solid #2ecc71; border-radius: 8px; font-size: 16px; }
-        #start-btn { padding: 18px 60px; background: #2ecc71; color: #081c15; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 20px; transition: 0.3s; }
-        #start-btn:hover { background: #40916c; transform: scale(1.05); }
+        #login { position: fixed; inset: 0; background: #081c15; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input, select { padding: 12px; margin-bottom: 10px; width: 280px; border-radius: 5px; border: 1px solid #2ecc71; background: #000; color: #fff; }
+        #start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; font-size: 18px; }
 
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; } }
         canvas { display: none; }
     </style>
@@ -78,34 +83,31 @@
 <div id="notification-container"></div>
 
 <div id="ui-top">
-    <span id="move-timer">HAREKET SİSTEMİ BAŞLATILIYOR...</span>
+    <span id="move-timer">KOMUTAN BEKLENİYOR...</span>
 </div>
 
 <div id="clan-list">
-    <div id="clan-toggle-btn" onclick="toggleClans()">DÜNYA DEVLETLERİ ▼</div>
+    <div style="font-weight:bold; color:#2ecc71; border-bottom:1px solid #333;">DÜNYA DEVLETLERİ</div>
     <div id="clans-container"></div>
 </div>
 
 <div id="build-menu">
-    <h2 style="color:#2ecc71; margin-top:0;">İNŞAAT EMRİ</h2>
-    <button class="build-btn" onclick="executeBuild('Köy', '🏡')">Köy (🏡)</button>
-    <button class="build-btn" onclick="executeBuild('Kale', '🏰')">Kale (🏰)</button>
-    <button class="build-btn" onclick="executeBuild('Şehir', '🏯')">Şehir (🏯)</button>
-    <button class="build-btn" onclick="executeBuild('Liman', '⚓')">Liman (⚓)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:#ff4d4d; background:none; border:none; cursor:pointer; margin-top:15px; font-weight:bold;">İPTAL ET</button>
+    <h2 style="color:#2ecc71;">İNŞAAT EMRİ</h2>
+    <button class="build-btn" onclick="build('Köy', '🏡')">Köy (🏡)</button>
+    <button class="build-btn" onclick="build('Kale', '🏰')">Kale (🏰)</button>
+    <button class="build-btn" onclick="build('Şehir', '🏯')">Şehir (🏯)</button>
+    <button class="build-btn" onclick="build('Liman', '⚓')">Liman (⚓)</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; background:none; border:none; cursor:pointer; margin-top:10px;">İPTAL</button>
 </div>
 
 <div id="login">
-    <h1 style="color:#2ecc71; font-size: 45px; margin-bottom: 10px; text-shadow: 0 0 20px #2ecc71;">ELAZIĞ CEPHESİ</h1>
-    <p style="color: #95d5b2; margin-bottom: 30px;">Tarihi Sen Yazmaya Hazır mısın?</p>
-    <input type="text" id="pName" placeholder="Kahraman İsmi Giriniz">
+    <h1 style="color:#2ecc71; font-size:40px; margin-bottom:20px;">ELAZIĞ CEPHESİ</h1>
+    <input type="text" id="pName" placeholder="İsminiz">
     <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
-        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#9b59b6">DEVLET-İ ALİYYE (Mor)</option>
-        <option value="SPARTA" data-color="#ff9800">SPARTA (Turuncu)</option>
-        <option value="CRM" data-color="#ff0000">CRM (Kırmızı)</option>
-        <option value="VAMPİRE" data-color="#7f8c8d">VAMPİRE (Füme)</option>
-        <option value="YENİ_KLAN" data-color="#ffffff">➕ Yeni Klan Kur...</option>
+        <option value="AVAR" data-color="#2ecc71">AVAR</option>
+        <option value="OSMANLI" data-color="#9b59b6">OSMANLI</option>
+        <option value="CRM" data-color="#ff0000">CRM</option>
+        <option value="YENİ" data-color="#ffffff">+ Yeni Klan Kur...</option>
     </select>
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
@@ -114,7 +116,7 @@
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" onclick="document.getElementById('build-menu').style.display='block'">
-            <span id="pIcon" style="font-size:24px;">🏇</span>
+            <span id="pIcon" style="font-size:30px;">🏇</span>
             <span id="nameTag" class="name-tag"></span>
         </div>
     </div>
@@ -123,46 +125,39 @@
 <script>
     const supabaseClient = window.supabase.createClient("https://nfyqinmktmmdurklsred.supabase.co", "Sb_publishable_M6G0bwXo3kkFf9wGY9xz_A_DlDWrvm8");
 
-    let x = 500, y = 300, SIZE = 20, zoom = 1.0;
-    let lastMoveTime = 0;
-    let myId = localStorage.getItem('playerId') || Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('playerId', myId);
+    let x = 400, y = 300, SIZE = 20, lastMoveTime = 0;
+    let myId = localStorage.getItem('pId') || Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('pId', myId);
     let myName, myKlan, myColor;
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
-    function toggleClans() {
-        const cont = document.getElementById('clans-container');
-        cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function basla() {
+    function basla() {
         myName = document.getElementById('pName').value.trim();
-        if(!myName) { alert("Bir isim seçmelisin!"); return; }
+        if(!myName) return alert("İsim yazın!");
 
         const sel = document.getElementById('pKlan');
-        if(sel.value === "YENİ_KLAN") {
-            const custom = prompt("Klanınızın İsmi:");
-            myKlan = custom ? custom.toUpperCase() : "BAĞIMSIZ";
-            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 50%)`;
+        if(sel.value === "YENİ") {
+            const n = prompt("Klan Adı:");
+            myKlan = n ? n.toUpperCase() : "BAĞIMSIZ";
+            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
         } else {
             myKlan = sel.value;
             myColor = sel.options[sel.selectedIndex].dataset.color;
         }
 
-        // Harita Verisi Hazırlama
+        // Haritayı analiz et
         canvas.width = 1500; canvas.height = 800;
         try { ctx.drawImage(mapImg, 0, 0, 1500, 800); } catch(e) {}
 
-        // Sadece Karada Başlatma Döngüsü (Maksimum 1000 deneme)
-        let found = false;
+        // SADECE KARADA BAŞLAT (Maks 1000 deneme)
         for(let i=0; i<1000; i++) {
-            let tx = Math.floor(Math.random() * 700) + 20;
-            let ty = Math.floor(Math.random() * 350) + 20;
-            const pix = ctx.getImageData((tx*SIZE/15000)*1500, (ty*SIZE/8000)*800, 1, 1).data;
-            if(pix[0] > 180) { x = tx; y = ty; found = true; break; }
+            let tx = Math.floor(Math.random() * 700) + 30;
+            let ty = Math.floor(Math.random() * 350) + 30;
+            const p = ctx.getImageData((tx*SIZE/15000)*1500, (ty*SIZE/8000)*800, 1, 1).data;
+            if(p[0] < 240) { x = tx; y = ty; break; } // Karayı buldu
         }
 
         document.getElementById('login').style.display = 'none';
@@ -170,60 +165,63 @@
         document.getElementById('nameTag').innerText = myName;
         document.getElementById('nameTag').style.backgroundColor = myColor;
 
-        updateVisuals();
-        focusPlayer();
+        sync();
+        focus();
+        loadWorld();
+        setInterval(loadWorld, 4000);
+        setInterval(updateTimer, 100);
         
-        // Veritabanı ve Realtime Başlatma
-        initRealtime();
-        loadWorldData();
-        setInterval(loadWorldData, 4000); 
-        setInterval(syncCooldown, 100);
+        // Realtime bildirimleri dinle
+        supabaseClient.channel('global').on('broadcast', {event:'log'}, p => addNotif(p.payload.msg, p.payload.color)).subscribe();
     }
 
-    function syncCooldown() {
+    function updateTimer() {
         const now = Date.now();
-        const cd = document.getElementById('pIcon').innerText === "🚢" ? 4000 : 2000;
+        const isSea = document.getElementById('pIcon').innerText === "🚢";
+        const cd = isSea ? 4000 : 2000;
         const diff = now - lastMoveTime;
         const el = document.getElementById('move-timer');
         if(diff < cd) {
             el.innerText = `🔄 BEKLEME: ${Math.ceil((cd-diff)/1000)}s`;
-            el.style.color = "#ff4d4d";
+            el.style.color = "red";
         } else {
             el.innerText = "⚡ HAREKET: HAZIR";
             el.style.color = "#2ecc71";
         }
     }
 
-    async function executeBuild(label, icon) {
+    async function build(label, icon) {
         if(document.getElementById('pIcon').innerText === "🚢") {
-            addNotif("❌ Kaptan! Deniz ortasına bina yapamayız!", "#ff4d4d");
+            addNotif("⚠️ DENİZDE YAPI İNŞA EDİLEMEZ!", "red");
             document.getElementById('build-menu').style.display = 'none';
             return;
         }
 
-        const bName = prompt(`${label} için bir isim verin:`);
+        const bName = prompt("Yapı Adı:");
         if(!bName) return;
 
         document.getElementById('build-menu').style.display = 'none';
         const meta = `${myName}||${myColor}||${bName}`;
 
-        // Bildirimi Tüm Dünyaya Duyur
-        sendWorldLog(`[${myKlan}] <b>${myName}</b>, ${x},${y} koordinatlarında <b>${bName}</b> (${icon}) inşa etti!`, myColor);
+        // Bildirim Gönder
+        const msg = `[${myKlan}] <b>${myName}</b>, ${x},${y} konumunda <b>${bName}</b> kurdu!`;
+        addNotif(msg, myColor);
+        supabaseClient.channel('global').send({type:'broadcast', event:'log', payload:{msg, color:myColor}});
 
-        const { error } = await supabaseClient.from('structures').insert([{ owner_name: meta, type: icon, x, y }]);
-        if(error) console.error("Build Error:", error);
-        loadWorldData();
+        await supabaseClient.from('structures').insert([{ owner_name: meta, type: icon, x, y }]);
+        loadWorld();
     }
 
-    function updateVisuals() {
+    function sync() {
         const p = document.getElementById('player');
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
         
+        // GEMİ KONTROLÜ (Wikipedia haritasında su BEYAZDIR: 255,255,255)
         try {
             const pix = ctx.getImageData((x*SIZE/15000)*1500, (y*SIZE/8000)*800, 1, 1).data;
-            // Renk kontrolü: Wikipedia haritasında su açık renk/beyazdır.
-            document.getElementById('pIcon').innerText = (pix[0] > 240 && pix[1] > 240) ? "🚢" : "🏇";
+            // Eğer RGB değerleri çok yüksekse beyazdır (su), değilse karadır.
+            document.getElementById('pIcon').innerText = (pix[0] > 245 && pix[1] > 245) ? "🚢" : "🏇";
         } catch(e) { document.getElementById('pIcon').innerText = "🏇"; }
 
         supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x, y, last_seen: new Date().toISOString() }).then();
@@ -231,91 +229,78 @@
 
     document.getElementById('map').onclick = function(e) {
         if(e.target.id !== 'map-img') return;
-        const now = Date.now();
-        const cd = document.getElementById('pIcon').innerText === "🚢" ? 4000 : 2000;
-        if(now - lastMoveTime < cd) return;
+        const isSea = document.getElementById('pIcon').innerText === "🚢";
+        if(Date.now() - lastMoveTime < (isSea ? 4000 : 2000)) return;
 
         const rect = mapImg.getBoundingClientRect();
-        const tx = Math.floor(((e.clientX - rect.left)/zoom)/SIZE);
-        const ty = Math.floor(((e.clientY - rect.top)/zoom)/SIZE);
+        const tx = Math.floor((e.clientX - rect.left) / SIZE);
+        const ty = Math.floor((e.clientY - rect.top) / SIZE);
 
         if (tx > x) x++; else if (tx < x) x--;
         else if (ty > y) y++; else if (ty < y) y--;
         
-        lastMoveTime = now;
-        updateVisuals();
+        lastMoveTime = Date.now();
+        sync();
     };
 
-    function focusPlayer() {
+    function focus() {
         const vp = document.getElementById('viewport');
         vp.scrollTo((x*SIZE) - (window.innerWidth/2), (y*SIZE) - (window.innerHeight/2));
     }
 
     function addNotif(msg, color) {
-        const container = document.getElementById('notification-container');
-        const div = document.createElement('div');
-        div.className = 'notif';
-        div.style.borderColor = color;
-        div.innerHTML = msg;
-        container.appendChild(div);
-        setTimeout(() => div.remove(), 5000);
+        const c = document.getElementById('notification-container');
+        const d = document.createElement('div');
+        d.className = 'notif'; d.style.borderColor = color; d.innerHTML = msg;
+        c.appendChild(d);
+        setTimeout(() => d.remove(), 5000);
     }
 
-    function sendWorldLog(msg, color) {
-        addNotif(msg, color);
-        supabaseClient.channel('global-chat').send({ type: 'broadcast', event: 'log', payload: { msg, color } });
-    }
-
-    function initRealtime() {
-        supabaseClient.channel('global-chat').on('broadcast', { event: 'log' }, (p) => addNotif(p.payload.msg, p.payload.color)).subscribe();
-    }
-
-    async function loadWorldData() {
-        const { data: dbStr } = await supabaseClient.from('structures').select('*');
-        const { data: dbPly } = await supabaseClient.from('players').select('*');
+    async function loadWorld() {
+        const { data: dbS } = await supabaseClient.from('structures').select('*');
+        const { data: dbP } = await supabaseClient.from('players').select('*');
         const mapDiv = document.getElementById('map');
 
-        // Temizlik: Sadece oyuncu dışındaki her şeyi temizle
-        mapDiv.querySelectorAll('.structure-item, .other-hero').forEach(n => n.remove());
+        // Mevcutları temizle (Oyuncu hariç)
+        mapDiv.querySelectorAll('.structure-item, .other-p').forEach(n => n.remove());
 
-        // Yapıları Çiz
-        if(dbStr) dbStr.forEach(s => {
-            const p = s.owner_name.split("||");
+        // Yapıları Çiz (BURASI DÜZELTİLDİ)
+        if(dbS) dbS.forEach(s => {
+            const info = s.owner_name.split("||");
             const div = document.createElement('div');
             div.className = 'structure-item';
-            div.style.left = (s.x*SIZE)+'px'; div.style.top = (s.y*SIZE)+'px';
-            div.innerHTML = `<span class="s-icon">${s.type}</span><span class="s-tag" style="color:${p[1]}; border-color:${p[1]}">${p[2]}</span>`;
+            div.style.left = (s.x * SIZE) + 'px'; 
+            div.style.top = (s.y * SIZE) + 'px';
+            div.innerHTML = `<span class="s-icon">${s.type}</span><span class="s-tag" style="border-color:${info[1]}">${info[2]}</span>`;
             mapDiv.appendChild(div);
         });
 
-        // Klan Listesini Sıfırla ve Dinamik Olarak Doldur
+        // Klan Listesini Güncelle
         const clansCont = document.getElementById('clans-container');
         clansCont.innerHTML = '';
-        let dynamicClans = {};
+        let clans = {};
 
-        if(dbPly) dbPly.forEach(p => {
-            // Son 1 dakikadır aktif olanları göster
+        if(dbP) dbP.forEach(p => {
             if(Date.now() - new Date(p.last_seen).getTime() < 60000) {
-                if(!dynamicClans[p.klan]) dynamicClans[p.klan] = { color: p.color, members: [] };
-                dynamicClans[p.klan].members.push(p.name);
+                if(!clans[p.klan]) clans[p.klan] = { c: p.color, m: [] };
+                clans[p.klan].m.push(p.name);
                 
                 if(p.id !== myId) {
-                    const hero = document.createElement('div');
-                    hero.className = 'other-hero'; hero.style.position='absolute'; hero.style.left=(p.x*SIZE)+'px'; hero.style.top=(p.y*SIZE)+'px';
-                    hero.innerHTML = `<span style="font-size:22px;">🏇</span><span class="name-tag" style="background:${p.color}">${p.name}</span>`;
-                    mapDiv.appendChild(hero);
+                    const u = document.createElement('div');
+                    u.className = 'other-p'; u.style.position='absolute'; u.style.left=(p.x*SIZE)+'px'; u.style.top=(p.y*SIZE)+'px';
+                    u.style.zIndex="1500"; u.style.transform="translate(-20px,-20px)"; u.style.display="flex"; u.style.flexDirection="column"; u.style.alignItems="center";
+                    u.innerHTML = `<span style="font-size:30px;">🏇</span><span class="name-tag" style="background:${p.color}">${p.name}</span>`;
+                    mapDiv.appendChild(u);
                 }
             }
         });
 
-        // Klan Listesini DOM'a Yaz
-        for(let k in dynamicClans) {
-            const cl = dynamicClans[k];
-            const div = document.createElement('div');
-            div.style.marginBottom = "12px";
-            div.innerHTML = `<div style="color:${cl.color}; font-size:13px; font-weight:bold;">${k}</div>
-                             <div style="color:#888; font-size:11px;">${cl.members.join(', ')}</div>`;
-            clansCont.appendChild(div);
+        for(let k in clans) {
+            const d = document.createElement('div');
+            d.style.marginBottom="10px";
+            d.innerHTML = `<div style="color:${clans[k].c}; font-weight:bold; font-size:12px;">${k}</div>
+                           <div style="color:#aaa; font-size:10px;">${clans[k].m.join(', ')}</div>`;
+            clansCont.appendChild(d);
         }
     }
 </script>
