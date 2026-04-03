@@ -3,43 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Savaş Odası - Revize</title>
+    <title>Klanlar - İnşaat ve Fetih</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
         
+        /* Giriş */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; border-radius: 8px; }
         button { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
 
-        /* Sol Taraftaki Klan Listesi - Biraz Daha Ortaya Yakın */
-        #klan-listesi { 
-            position: fixed; left: 20px; top: 15%; z-index: 40; 
-            pointer-events: none; text-shadow: 2px 2px 5px #000;
-        }
+        /* Sol Üst Klan Listesi */
+        #klan-listesi { position: fixed; left: 20px; top: 15%; z-index: 40; pointer-events: none; text-shadow: 2px 2px 5px #000; }
         .klan-item { font-weight: bold; font-size: 16px; margin-bottom: 8px; letter-spacing: 1px; }
 
-        /* Arayüz */
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 10px; text-align: center; z-index: 50; border-bottom: 1px solid rgba(46, 204, 113, 0.3); }
-        #timer { font-size: 18px; font-weight: bold; }
-
-        /* YEŞİL TAKİP OKU */
-        #tracker-arrow {
-            position: fixed; width: 0; height: 0;
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-bottom: 25px solid #2ecc71; z-index: 90; display: none;
-            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
+        /* İnşaat Menüsü Paneli */
+        #build-menu { 
+            position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95); border: 2px solid #2ecc71; padding: 20px;
+            z-index: 200; display: none; border-radius: 15px; text-align: center;
         }
+        .build-btn { display: block; width: 200px; padding: 10px; margin: 5px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 5px; }
+        .build-btn:hover { background: #2ecc71; color: #000; }
 
-        /* Harita */
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; -webkit-overflow-scrolling: touch; }
+        /* Arayüz */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 50; border-bottom: 1px solid #2ecc71; }
+        #build-timer { font-size: 14px; color: #f1c40f; display: block; margin-top: 5px; }
+
+        /* Harita ve Yapılar */
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
         #map { width: 15000px; height: 8000px; position: relative; }
         #map-img { width: 100%; height: 100%; display: block; }
         
-        /* Karakter */
-        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: left 0.5s, top 0.5s; }
+        .building { position: absolute; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 40px; z-index: 5; filter: drop-shadow(0 0 5px #000); }
+        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: left 0.5s, top 0.5s; cursor: pointer; }
         .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; color: #fff; text-shadow: 1px 1px 2px #000; }
+        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; }
 
+        #tracker-arrow { position: fixed; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #2ecc71; z-index: 90; display: none; pointer-events: none; }
         canvas { display: none; }
     </style>
 </head>
@@ -48,39 +48,45 @@
 <canvas id="mapCanvas"></canvas>
 <div id="tracker-arrow"></div>
 
+<div id="build-menu">
+    <h3 style="color:#2ecc71; margin-top:0;">YAPI İNŞA ET</h3>
+    <div id="build-options"></div>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:10px; background:#c0392b; color:#fff;">İPTAL</button>
+</div>
+
 <div id="klan-listesi">
-    <div style="color:#2ecc71; font-size: 12px; opacity: 0.7; margin-bottom: 10px;">KLAN SIRALAMASI</div>
-    <div class="klan-item" style="color: #2ecc71;">1- AVAR</div>
-    <div class="klan-item" style="color: #9b59b6;">2- DEVLET-İ ALİYYE-İ İSLAM</div>
-    <div class="klan-item" style="color: #e74c3c;">3- SPARTA</div>
-    <div class="klan-item" style="color: #556b2f;">4- VAMPİRE EMPİRE</div>
-    <div class="klan-item" style="color: #ffc0cb;">5- NOR</div>
-    <div class="klan-item" style="color: #ff0000;">6- CRM</div>
+    <div class="klan-item" style="color: #2ecc71;">AVAR</div>
+    <div class="klan-item" style="color: #9b59b6;">D.A.İ</div>
+    <div class="klan-item" style="color: #e74c3c;">SPARTA</div>
+    <div class="klan-item" style="color: #556b2f;">VAMPİRE</div>
+    <div class="klan-item" style="color: #ffc0cb;">NOR</div>
+    <div class="klan-item" style="color: #ff0000;">CRM</div>
 </div>
 
 <div id="login">
-    <h1 style="color:#2ecc71;">KLANLAR SAVAŞI</h1>
-    <input type="text" id="pName" placeholder="Komutan İsmi">
+    <h1>STRATEJİ ODASI</h1>
+    <input type="text" id="pName" placeholder="İsim">
     <select id="pKlan">
         <option value="">Klan Seçin...</option>
         <option value="AVAR" data-color="#2ecc71">AVAR</option>
-        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#9b59b6">DEVLET-İ ALİYYE-İ İSLAM</option>
+        <option value="D.A.İ" data-color="#9b59b6">D.A.İ</option>
         <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
-        <option value="VAMPİRE EMPİRE" data-color="#556b2f">VAMPİRE EMPİRE</option>
+        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE</option>
         <option value="NOR" data-color="#ffc0cb">NOR</option>
         <option value="CRM" data-color="#ff0000">CRM</option>
     </select>
-    <button onclick="basla()">SEFERE ÇIK</button>
+    <button onclick="basla()">BAŞLA</button>
 </div>
 
 <div id="ui">
     <div id="timer">HAZIR</div>
+    <div id="build-timer"></div>
 </div>
 
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
-        <div id="player" class="unit" style="display:none;">
+        <div id="player" class="unit" style="display:none;" onclick="showBuildMenu()">
             <span id="pIcon" class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
         </div>
@@ -88,101 +94,110 @@
 </div>
 
 <script>
-    const adminName = "Lord"; 
     let x = 0, y = 0;
     const SIZE = 80;
     let lastMoveTime = 0;
-    let currentCooldown = 5000;
-    
+    let buildEndTime = 0;
+    let structures = []; // Mevcut yapıların listesi
+
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
     const player = document.getElementById('player');
-    const arrow = document.getElementById('tracker-arrow');
 
     function basla() {
-        const nameInput = document.getElementById('pName').value.trim();
-        const klanSelect = document.getElementById('pKlan');
-        const kColor = klanSelect.options[klanSelect.selectedIndex].dataset.color;
-
-        if(!nameInput || !klanSelect.value) return alert("İsim ve Klan seçiniz!");
-        if(nameInput !== adminName && /\d/.test(nameInput)) return alert("Sadece Lord sayı kullanabilir!");
+        const name = document.getElementById('pName').value.trim();
+        const klan = document.getElementById('pKlan');
+        if(!name || !klan.value) return;
 
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
-
         findSafeStart();
 
-        document.getElementById('nameTag').innerText = nameInput;
-        document.getElementById('nameTag').style.backgroundColor = kColor;
+        document.getElementById('nameTag').innerText = name;
+        document.getElementById('nameTag').style.backgroundColor = klan.options[klan.selectedIndex].dataset.color;
         document.getElementById('login').style.display = 'none';
         player.style.display = 'flex';
-        
         updateUnit();
-        setTimeout(() => {
-            player.scrollIntoView({ block: 'center', inline: 'center' });
-        }, 100);
-
         requestAnimationFrame(updateArrow);
     }
 
-    function isSea(checkX, checkY) {
-        const sampleX = (checkX * SIZE / 15000) * 1500;
-        const sampleY = (checkY * SIZE / 8000) * 800;
-        const p = ctx.getImageData(sampleX, sampleY, 1, 1).data;
+    function isSea(cx, cy) {
+        const sx = (cx * SIZE / 15000) * 1500;
+        const sy = (cy * SIZE / 8000) * 800;
+        const p = ctx.getImageData(sx, sy, 1, 1).data;
         return (p[0] < 150 && p[1] < 150 && p[2] < 150);
     }
 
     function findSafeStart() {
-        let found = false;
-        while(!found) {
-            let rx = Math.floor(Math.random() * 180);
-            let ry = Math.floor(Math.random() * 90);
-            if(!isSea(rx, ry)) {
-                x = rx; y = ry;
-                found = true;
-            }
+        while(true) {
+            let rx = Math.floor(Math.random() * 180), ry = Math.floor(Math.random() * 90);
+            if(!isSea(rx, ry)) { x = rx; y = ry; break; }
         }
+    }
+
+    function showBuildMenu() {
+        if (Date.now() < buildEndTime) return alert("Hali hazırda bir inşaat sürüyor!");
+        
+        const menu = document.getElementById('build-menu');
+        const options = document.getElementById('build-options');
+        options.innerHTML = '';
+        menu.style.display = 'block';
+
+        const types = [
+            {n: 'Köy (2h)', s: 7200, i: '🏡'},
+            {n: 'Kale (4h)', s: 14400, i: '🏰'},
+            {n: 'Şehir (5h)', s: 18000, i: '🏙️'}
+        ];
+
+        // Liman kontrolü (çevrede deniz var mı?)
+        let nearSea = isSea(x+1, y) || isSea(x-1, y) || isSea(x, y+1) || isSea(x, y-1);
+        if(nearSea) types.push({n: 'Liman (3h)', s: 10800, i: '⚓'});
+
+        types.forEach(t => {
+            let btn = document.createElement('button');
+            btn.className = 'build-btn';
+            btn.innerText = t.n;
+            btn.onclick = () => startBuild(t);
+            options.appendChild(btn);
+        });
+    }
+
+    function startBuild(type) {
+        // 4 Kare mesafe kontrolü
+        const tooClose = structures.some(s => Math.abs(s.x - x) < 4 && Math.abs(s.y - y) < 4);
+        if(tooClose) return alert("Yakında başka bir yapı var! (En az 4 kare mesafe gerek)");
+
+        buildEndTime = Date.now() + (type.s * 1000);
+        document.getElementById('build-menu').style.display = 'none';
+        
+        // Simülasyon bitince yapıyı ekle
+        setTimeout(() => {
+            createBuilding(x, y, type.i);
+        }, type.s * 1000);
+    }
+
+    function createBuilding(bx, by, icon) {
+        const b = document.createElement('div');
+        b.className = 'building';
+        b.style.left = (bx * SIZE) + "px";
+        b.style.top = (by * SIZE) + "px";
+        b.innerText = icon;
+        document.getElementById('map').appendChild(b);
+        structures.push({x: bx, y: by, type: icon});
     }
 
     function updateUnit() {
-        const icon = document.getElementById('pIcon');
-        const inSea = isSea(x, y);
-
-        if(inSea) {
-            icon.innerText = "🚢";
-            currentCooldown = 10000;
-        } else {
-            icon.innerText = "🏇";
-            currentCooldown = 5000;
-        }
-
         player.style.left = (x * SIZE) + "px";
         player.style.top = (y * SIZE) + "px";
-    }
-
-    function updateArrow() {
-        const pRect = player.getBoundingClientRect();
-        const vW = window.innerWidth, vH = window.innerHeight;
-
-        if (pRect.left >= 0 && pRect.right <= vW && pRect.top >= 0 && pRect.bottom <= vH) {
-            arrow.style.display = 'none';
-        } else {
-            arrow.style.display = 'block';
-            let arrowX = Math.min(Math.max(pRect.left + 30, 20), vW - 40);
-            let arrowY = Math.min(Math.max(pRect.top + 30, 80), vH - 40);
-            arrow.style.left = arrowX + "px";
-            arrow.style.top = arrowY + "px";
-
-            const angle = Math.atan2((pRect.top + 30) - arrowY, (pRect.left + 30) - arrowX);
-            arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
-        }
-        requestAnimationFrame(updateArrow);
+        document.getElementById('pIcon').innerText = isSea(x, y) ? "🚢" : "🏇";
     }
 
     document.getElementById('map').onclick = function(e) {
+        if (e.target.id !== 'map-img') return; // Yapıya veya oyuncuya tıklanırsa hareket etme
         const now = Date.now();
-        if (now - lastMoveTime < currentCooldown) return;
+        const cd = isSea(x,y) ? 10000 : 5000;
+        if (now - lastMoveTime < cd) return;
 
         const tx = Math.floor(e.offsetX / SIZE);
         const ty = Math.floor(e.offsetY / SIZE);
@@ -195,16 +210,32 @@
     };
 
     setInterval(() => {
-        const diff = Date.now() - lastMoveTime;
-        const timerDiv = document.getElementById('timer');
-        if (diff < currentCooldown) {
-            timerDiv.innerText = "HAREKET: " + Math.ceil((currentCooldown - diff) / 1000) + "s";
-            timerDiv.style.color = "#ff4757";
+        const now = Date.now();
+        const bTimer = document.getElementById('build-timer');
+        if (now < buildEndTime) {
+            let remain = Math.ceil((buildEndTime - now) / 1000);
+            bTimer.innerText = `İnşaat Sürüyor: ${remain}s`;
         } else {
-            timerDiv.innerText = "HAREKETE HAZIR";
-            timerDiv.style.color = "#2ecc71";
+            bTimer.innerText = "";
         }
     }, 500);
+
+    // Takip oku fonksiyonu (Öncekiyle aynı)
+    function updateArrow() {
+        const r = player.getBoundingClientRect();
+        const arrow = document.getElementById('tracker-arrow');
+        if (r.left>=0 && r.right<=window.innerWidth && r.top>=0 && r.bottom<=window.innerHeight) {
+            arrow.style.display = 'none';
+        } else {
+            arrow.style.display = 'block';
+            let ax = Math.min(Math.max(r.left+30, 20), window.innerWidth-40);
+            let ay = Math.min(Math.max(r.top+30, 80), window.innerHeight-40);
+            arrow.style.left = ax+"px"; arrow.style.top = ay+"px";
+            const angle = Math.atan2((r.top+30)-ay, (r.left+30)-ax);
+            arrow.style.transform = `rotate(${angle*(180/Math.PI)-90}deg)`;
+        }
+        requestAnimationFrame(updateArrow);
+    }
 </script>
 
 </body>
