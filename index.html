@@ -32,7 +32,6 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
-        /* GÜNCELLENEN KLAN LİSTESİ STİLLERİ */
         #clan-list {
             position: fixed; left: 15px; top: 60px; width: 220px;
             background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(46, 204, 113, 0.5);
@@ -173,7 +172,6 @@
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
-    // YENİ: Klan listesini açıp kapatan fonksiyon
     function toggleClanList() {
         const container = document.getElementById('clans-container');
         const icon = document.getElementById('clan-toggle-icon');
@@ -206,14 +204,18 @@
         }
 
         canvas.width = 1500; canvas.height = 800;
-        ctx.drawImage(mapImg, 0, 0, 1500, 800);
-
-        while(true) {
-            let rx = Math.floor(Math.random() * 600) + 50;
-            let ry = Math.floor(Math.random() * 300) + 50;
-            const pix = ctx.getImageData((rx * SIZE / 15000) * 1500, (ry * SIZE / 8000) * 800, 1, 1).data;
-            if(!(pix[0] < 150 && pix[1] < 150 && pix[2] < 150)) { x = rx; y = ry; break; }
+        
+        // Harita çizimi hata fırlatırsa diye try-catch bloku (Güvenlik için)
+        try {
+            ctx.drawImage(mapImg, 0, 0, 1500, 800);
+        } catch(e) {
+            console.log("Harita tam yüklenemedi ama oyun başlatılıyor.");
         }
+
+        // YENİ: Sonsuz döngü (while) kaldırıldı! 
+        // Artık suda da karada da doğrudan anında rastgele doğacak. Tarayıcıyı kilitlenme yapmaz.
+        x = Math.floor(Math.random() * 600) + 50;
+        y = Math.floor(Math.random() * 300) + 50;
 
         document.getElementById('login').style.display = 'none';
         document.getElementById('player').style.display = 'flex';
@@ -300,9 +302,15 @@
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
         
-        const pix = ctx.getImageData((x * SIZE / 15000) * 1500, (y * SIZE / 8000) * 800, 1, 1).data;
-        const isSea = (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
-        document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
+        // GÜNCELLENEN: Piksel okuma hatası verirse sistemi çökertmemesi için try-catch eklendi
+        try {
+            const pix = ctx.getImageData((x * SIZE / 15000) * 1500, (y * SIZE / 8000) * 800, 1, 1).data;
+            const isSea = (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
+            document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
+        } catch(e) {
+            // Renk verisi okunamıyorsa varsayılan at yap (Sistemi durdurmaz)
+            document.getElementById('pIcon').innerText = "🏇";
+        }
         
         supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
     }
@@ -408,19 +416,17 @@
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
         
-        // GÜNCELLENEN: Yeni Renkler ve İsimler ile Varsayılan Klanlar
         const clans = {
-            "AVAR": { color: "#2ecc71", members: [] }, // Yeşil
-            "DEVLET-İ ALİYYE-İ İSLAM": { color: "#9b59b6", members: [] }, // Mor
-            "SPARTA": { color: "#ff9800", members: [] }, // Turuncu
-            "CRM": { color: "#ff0000", members: [] }, // Kırmızı
-            "VAMPİRE": { color: "#555555", members: [] } // Füme
+            "AVAR": { color: "#2ecc71", members: [] }, 
+            "DEVLET-İ ALİYYE-İ İSLAM": { color: "#9b59b6", members: [] }, 
+            "SPARTA": { color: "#ff9800", members: [] }, 
+            "CRM": { color: "#ff0000", members: [] }, 
+            "VAMPİRE": { color: "#555555", members: [] } 
         };
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    // Veritabanından gelen aktif oyuncu listesinde yeni bir klan varsa otomatik ekler
                     if(!clans[p.klan]) {
                         clans[p.klan] = { color: p.color || "#ffffff", members: [] };
                     }
@@ -434,5 +440,4 @@
                 u.style.left = (p.x * SIZE) + "px"; u.style.top = (p.y * SIZE) + "px";
                 u.style.zIndex = "80";
                 u.style.display = 'flex'; u.style.flexDirection = 'column'; u.style.alignItems = 'center';
-                u.innerHTML = `<span style="font-size:16px;">🏇</span><span style="background:${p.color}; font-size:7px; padding:1px 2px; border-radius:2px; font-weight:bold;">${p.name}</span>`;
-                
+                u.innerHTML = `<span style="font-size:16px;">🏇</span><span style="background:${p.color}; font-size:7px
