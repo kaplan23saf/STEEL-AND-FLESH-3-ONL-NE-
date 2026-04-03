@@ -3,57 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Dünya Strateji Arenası</title>
+    <title>Yüksek Çözünürlüklü Savaş Haritası</title>
     <style>
-        body { margin: 0; background: #000b1a; color: #2ecc71; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000b1a; color: #2ecc71; font-family: sans-serif; overflow: hidden; }
         
         /* Giriş Paneli */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; text-align: center; border-radius: 10px; }
-        button { padding: 12px 30px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; }
+        input { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; border-radius: 8px; }
+        button { padding: 10px 25px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
 
         /* Arayüz */
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 10px; text-align: center; border-bottom: 2px solid #2ecc71; z-index: 50; pointer-events: none; }
-        #timer { font-size: 18px; font-weight: bold; color: #ff4757; }
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 8px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
+        #timer { font-size: 16px; font-weight: bold; color: #ff4757; }
 
         /* Harita Alanı */
-        #viewport { 
-            width: 100vw; 
-            height: 100vh; 
-            overflow: auto; 
-            background: #000;
-            touch-action: pan-x pan-y; /* Kaydırma izinleri */
-        }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; touch-action: pan-x pan-y; }
         
         #map { 
-            /* Harita boyutunu devasa tutuyoruz ama içindekileri küçük göstereceğiz */
-            width: 15000px; 
-            height: 8000px; 
+            /* Haritayı devasa tutuyoruz (25.000 piksel), böylece küçük adımlarla çok yolun olur */
+            width: 25000px; 
+            height: 15000px; 
             background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
             background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             position: relative;
-            transform-origin: 0 0;
         }
 
-        /* Oyuncu İkonu (Sabit ve Belirgin) */
+        /* Oyuncu İkonu (Küçük karelere uygun boyuta çekildi) */
         .unit { 
             position: absolute; 
-            width: 100px; height: 100px; 
+            width: 40px; height: 40px; /* Atı biraz küçülttük ki küçük karelere sığsın */
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             z-index: 10;
-            transition: all 0.5s ease-in-out;
+            transition: all 0.4s ease-out;
         }
-        .unit-icon { font-size: 60px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 14px; background: rgba(0,0,0,0.9); color: #fff; padding: 2px 8px; border: 1px solid #2ecc71; border-radius: 5px; white-space: nowrap; margin-top: 5px; }
+        .unit-icon { font-size: 30px; filter: drop-shadow(0 0 5px gold); }
+        .unit-name { font-size: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 1px 4px; border: 1px solid #2ecc71; border-radius: 3px; white-space: nowrap; }
 
-        /* Yeşil Ok */
+        /* Yeşil Takip Oku */
         #tracker-arrow {
             position: fixed; width: 0; height: 0;
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-bottom: 25px solid #2ecc71; z-index: 60; display: none;
-            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
+            border-left: 8px solid transparent; border-right: 8px solid transparent;
+            border-bottom: 20px solid #2ecc71; z-index: 60; display: none;
+            filter: drop-shadow(0 0 5px #2ecc71); pointer-events: none;
         }
     </style>
 </head>
@@ -62,15 +53,14 @@
 <div id="tracker-arrow"></div>
 
 <div id="login">
-    <h1 style="color:#2ecc71;">KOMUTAN GİRİŞİ</h1>
+    <h1 style="color:#2ecc71;">MİKRO STRATEJİ</h1>
     <input type="text" id="pName" placeholder="İsim (Sayı Yasak)" oninput="this.value = this.value.replace(/[0-9]/g, '')">
-    <button onclick="basla()">HARİTAYA GİR</button>
+    <button onclick="basla()">ORDUYU YÖNET</button>
 </div>
 
 <div id="ui">
     <div id="timer">HAZIR</div>
-    <div id="coords" style="font-size: 12px; color: #888;">Konum: --, --</div>
-    <div style="font-size: 10px; color: #2ecc71;">İki parmakla yakınlaştır/uzaklaştır yapabilirsin</div>
+    <div id="coords" style="font-size: 10px; color: #888;">Hassas Konum: --, --</div>
 </div>
 
 <div id="viewport">
@@ -83,10 +73,14 @@
 </div>
 
 <script>
-    // ÖLÇEK AYARI: Her adım artık görsel olarak daha küçük (150px) 
-    // ama harita çok büyük olduğu için ekrana çok fazla alan sığıyor.
-    let x = 50, y = 30; 
-    const SIZE = 150; 
+    /* YENİ ÖLÇEK: 
+       SIZE = 40 piksel. 
+       Ekran yüksekliği ortalama 800-900 piksel desek, 
+       900 / 40 = Yaklaşık 22 kare ekrana sığar. 
+       Tam istediğin gibi!
+    */
+    let x = 300, y = 150; 
+    const SIZE = 40; 
     let lastMoveTime = 0;
     const cooldown = 5000;
 
@@ -100,14 +94,14 @@
         document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
         player.style.display = 'flex';
-        render(true); // İlk girişte atı merkeze al
+        render(true);
         requestAnimationFrame(updateArrow);
     }
 
     function render(center = false) {
         player.style.left = (x * SIZE) + "px";
         player.style.top = (y * SIZE) + "px";
-        document.getElementById('coords').innerText = `Koordinat: ${x}, ${y}`;
+        document.getElementById('coords').innerText = `X: ${x}, Y: ${y}`;
         
         if(center) {
             player.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
@@ -123,12 +117,12 @@
             arrow.style.display = 'none';
         } else {
             arrow.style.display = 'block';
-            let arrowX = Math.min(Math.max(pRect.left + 50, 20), vWidth - 40);
-            let arrowY = Math.min(Math.max(pRect.top + 50, 80), vHeight - 40);
+            let arrowX = Math.min(Math.max(pRect.left + 20, 15), vWidth - 30);
+            let arrowY = Math.min(Math.max(pRect.top + 20, 60), vHeight - 30);
             arrow.style.left = arrowX + "px";
             arrow.style.top = arrowY + "px";
 
-            const angle = Math.atan2((pRect.top + 50) - arrowY, (pRect.left + 50) - arrowX);
+            const angle = Math.atan2((pRect.top + 20) - arrowY, (pRect.left + 20) - arrowX);
             arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
         }
         requestAnimationFrame(updateArrow);
@@ -139,7 +133,7 @@
         const diff = now - lastMoveTime;
         const timerDiv = document.getElementById('timer');
         if (diff < cooldown) {
-            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
+            timerDiv.innerText = "İNTİKAL: " + Math.ceil((cooldown - diff) / 1000) + "s";
         } else {
             timerDiv.innerText = "HAREKETE HAZIR";
         }
@@ -156,7 +150,7 @@
         if (dist === 1) {
             x = tx; y = ty;
             lastMoveTime = now;
-            render(false); // Hareket ederken ekranı sarsmamak için center:false
+            render(false);
         }
     };
 </script>
