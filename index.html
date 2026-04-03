@@ -2,39 +2,59 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dev Dünya Atlası - Strateji</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Dünya Strateji Arenası</title>
     <style>
-        body { margin: 0; background: #000b1a; color: #f1c40f; font-family: 'Georgia', serif; overflow: hidden; }
+        body { margin: 0; background: #000b1a; color: #2ecc71; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         
+        /* Giriş Paneli */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; text-align: center; font-size: 18px; border-radius: 10px; }
-        button { padding: 12px 30px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; }
+        input { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; text-align: center; border-radius: 10px; }
+        button { padding: 12px 30px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; }
 
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 15px; text-align: center; border-bottom: 2px solid #2ecc71; z-index: 50; }
-        #timer { font-size: 20px; font-weight: bold; color: #ff4757; margin-top: 5px; }
+        /* Arayüz */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 10px; text-align: center; border-bottom: 2px solid #2ecc71; z-index: 50; pointer-events: none; }
+        #timer { font-size: 18px; font-weight: bold; color: #ff4757; }
 
-        /* Yeşil Takip Oku */
+        /* Harita Alanı */
+        #viewport { 
+            width: 100vw; 
+            height: 100vh; 
+            overflow: auto; 
+            background: #000;
+            touch-action: pan-x pan-y; /* Kaydırma izinleri */
+        }
+        
+        #map { 
+            /* Harita boyutunu devasa tutuyoruz ama içindekileri küçük göstereceğiz */
+            width: 15000px; 
+            height: 8000px; 
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            transform-origin: 0 0;
+        }
+
+        /* Oyuncu İkonu (Sabit ve Belirgin) */
+        .unit { 
+            position: absolute; 
+            width: 100px; height: 100px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 10;
+            transition: all 0.5s ease-in-out;
+        }
+        .unit-icon { font-size: 60px; filter: drop-shadow(0 0 10px gold); }
+        .unit-name { font-size: 14px; background: rgba(0,0,0,0.9); color: #fff; padding: 2px 8px; border: 1px solid #2ecc71; border-radius: 5px; white-space: nowrap; margin-top: 5px; }
+
+        /* Yeşil Ok */
         #tracker-arrow {
             position: fixed; width: 0; height: 0;
-            border-left: 15px solid transparent; border-right: 15px solid transparent;
-            border-bottom: 30px solid #2ecc71; z-index: 60; display: none;
-            filter: drop-shadow(0 0 15px #2ecc71); pointer-events: none;
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-bottom: 25px solid #2ecc71; z-index: 60; display: none;
+            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
         }
-
-        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; scroll-behavior: smooth; }
-        #map { 
-            /* DEV ÖLÇEK: 20.000 piksel genişlik */
-            width: 20000px; height: 10000px; 
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
-            background-size: 100% 100%; 
-            background-repeat: no-repeat;
-            position: relative; 
-        }
-
-        .unit { position: absolute; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .unit-icon { font-size: 70px; filter: drop-shadow(0 0 15px gold); }
-        .unit-name { font-size: 18px; background: rgba(0,0,0,0.9); color: #fff; padding: 4px 12px; border: 2px solid #2ecc71; border-radius: 8px; white-space: nowrap; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -42,15 +62,15 @@
 <div id="tracker-arrow"></div>
 
 <div id="login">
-    <h1 style="color:#2ecc71; text-shadow: 0 0 10px #2ecc71;">DÜNYA HAKİMİYETİ</h1>
-    <input type="text" id="pName" placeholder="Komutan İsmi Giriniz" oninput="this.value = this.value.replace(/[0-9]/g, '')">
-    <button onclick="basla()">SAVAŞI BAŞLAT</button>
+    <h1 style="color:#2ecc71;">KOMUTAN GİRİŞİ</h1>
+    <input type="text" id="pName" placeholder="İsim (Sayı Yasak)" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <button onclick="basla()">HARİTAYA GİR</button>
 </div>
 
 <div id="ui">
-    <div id="msg" style="font-size: 16px;">Kıtalararası Yolculuk: Tıkla ve İlerle!</div>
     <div id="timer">HAZIR</div>
-    <div id="coords" style="font-size: 12px; color: #888; margin-top:5px;">Mevcut Konum: --, --</div>
+    <div id="coords" style="font-size: 12px; color: #888;">Konum: --, --</div>
+    <div style="font-size: 10px; color: #2ecc71;">İki parmakla yakınlaştır/uzaklaştır yapabilirsin</div>
 </div>
 
 <div id="viewport">
@@ -63,9 +83,10 @@
 </div>
 
 <script>
-    // Başlangıç: Türkiye civarı (Tahmini koordinat)
-    let x = 20, y = 15; 
-    const SIZE = 500; // ÖLÇEK: Her tık 500 piksel (Çok büyük mesafe!)
+    // ÖLÇEK AYARI: Her adım artık görsel olarak daha küçük (150px) 
+    // ama harita çok büyük olduğu için ekrana çok fazla alan sığıyor.
+    let x = 50, y = 30; 
+    const SIZE = 150; 
     let lastMoveTime = 0;
     const cooldown = 5000;
 
@@ -75,22 +96,24 @@
 
     function basla() {
         const name = document.getElementById('pName').value.trim();
-        if(name.length < 2) return alert("Geçerli bir isim girin!");
+        if(name.length < 2) return alert("İsim girin!");
         document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
         player.style.display = 'flex';
-        render();
+        render(true); // İlk girişte atı merkeze al
         requestAnimationFrame(updateArrow);
     }
 
-    function render() {
+    function render(center = false) {
         player.style.left = (x * SIZE) + "px";
         player.style.top = (y * SIZE) + "px";
-        document.getElementById('coords').innerText = `Enlem/Boylam: ${x}, ${y}`;
-        player.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        document.getElementById('coords').innerText = `Koordinat: ${x}, ${y}`;
+        
+        if(center) {
+            player.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        }
     }
 
-    // YEŞİL TAKİP OKU SİSTEMİ
     function updateArrow() {
         const pRect = player.getBoundingClientRect();
         const vWidth = window.innerWidth;
@@ -100,32 +123,28 @@
             arrow.style.display = 'none';
         } else {
             arrow.style.display = 'block';
-            let arrowX = Math.min(Math.max(pRect.left + 60, 30), vWidth - 30);
-            let arrowY = Math.min(Math.max(pRect.top + 60, 100), vHeight - 30);
+            let arrowX = Math.min(Math.max(pRect.left + 50, 20), vWidth - 40);
+            let arrowY = Math.min(Math.max(pRect.top + 50, 80), vHeight - 40);
             arrow.style.left = arrowX + "px";
             arrow.style.top = arrowY + "px";
 
-            const angle = Math.atan2((pRect.top + 60) - arrowY, (pRect.left + 60) - arrowX);
+            const angle = Math.atan2((pRect.top + 50) - arrowY, (pRect.left + 50) - arrowX);
             arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
         }
         requestAnimationFrame(updateArrow);
     }
 
-    // 5 Saniye Sayacı
     setInterval(() => {
         const now = Date.now();
         const diff = now - lastMoveTime;
         const timerDiv = document.getElementById('timer');
         if (diff < cooldown) {
-            timerDiv.innerText = "İNTİKAL SÜRESİ: " + Math.ceil((cooldown - diff) / 1000) + "s";
-            timerDiv.style.color = "#ff4757";
+            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
         } else {
             timerDiv.innerText = "HAREKETE HAZIR";
-            timerDiv.style.color = "#2ecc71";
         }
     }, 500);
 
-    // Hareket Mekaniği
     document.getElementById('map').onclick = function(e) {
         const now = Date.now();
         if (now - lastMoveTime < cooldown) return;
@@ -137,12 +156,7 @@
         if (dist === 1) {
             x = tx; y = ty;
             lastMoveTime = now;
-            render();
-            document.getElementById('msg').innerText = "✅ Başarıyla İlerledin";
-            document.getElementById('msg').style.color = "#2ecc71";
-        } else if (dist !== 0) {
-            document.getElementById('msg').innerText = "❌ Çok uzak! Sadece bitişik bölgelere.";
-            document.getElementById('msg').style.color = "#f1c40f";
+            render(false); // Hareket ederken ekranı sarsmamak için center:false
         }
     };
 </script>
