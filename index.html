@@ -2,37 +2,44 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
-    <title>Klanlar Strateji - Elazığ Karargahı</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Klanlar - İnşaat ve Fetih</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        
+        /* Giriş */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; border-radius: 8px; }
         button { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-        
-        /* Arayüz */
-        #klan-listesi { position: fixed; left: 20px; top: 18%; z-index: 40; pointer-events: none; text-shadow: 2px 2px 5px #000; }
-        .klan-item { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 50; border-bottom: 1px solid #2ecc71; }
 
-        /* Harita Ayarları */
+        /* Sol Üst Klan Listesi */
+        #klan-listesi { position: fixed; left: 20px; top: 15%; z-index: 40; pointer-events: none; text-shadow: 2px 2px 5px #000; }
+        .klan-item { font-weight: bold; font-size: 16px; margin-bottom: 8px; letter-spacing: 1px; }
+
+        /* İnşaat Menüsü Paneli */
+        #build-menu { 
+            position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95); border: 2px solid #2ecc71; padding: 20px;
+            z-index: 200; display: none; border-radius: 15px; text-align: center;
+        }
+        .build-btn { display: block; width: 200px; padding: 10px; margin: 5px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 5px; }
+        .build-btn:hover { background: #2ecc71; color: #000; }
+
+        /* Arayüz */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 50; border-bottom: 1px solid #2ecc71; }
+        #build-timer { font-size: 14px; color: #f1c40f; display: block; margin-top: 5px; }
+
+        /* Harita ve Yapılar */
         #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
         #map { width: 15000px; height: 8000px; position: relative; }
         #map-img { width: 100%; height: 100%; display: block; }
-
-        /* Karakter ve Yapı Görselleri */
-        .unit { position: absolute; width: 100px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: all 0.5s; }
-        .unit-img { width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 13px; padding: 2px 10px; border-radius: 5px; font-weight: bold; margin-top: 5px; }
-
-        .building { position: absolute; width: 150px; height: 150px; z-index: 5; transform: translate(-50%, -50%); }
-        .building img { width: 100%; height: 100%; object-fit: contain; }
-
-        /* İnşaat Menüsü */
-        #build-menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #111; border: 2px solid #2ecc71; padding: 20px; z-index: 200; display: none; border-radius: 15px; }
-        .build-btn { display: block; width: 220px; padding: 12px; margin: 8px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; }
         
-        #tracker-arrow { position: fixed; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #2ecc71; z-index: 90; display: none; }
+        .building { position: absolute; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 40px; z-index: 5; filter: drop-shadow(0 0 5px #000); }
+        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: left 0.5s, top 0.5s; cursor: pointer; }
+        .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
+        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; }
+
+        #tracker-arrow { position: fixed; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #2ecc71; z-index: 90; display: none; pointer-events: none; }
         canvas { display: none; }
     </style>
 </head>
@@ -42,63 +49,56 @@
 <div id="tracker-arrow"></div>
 
 <div id="build-menu">
-    <h3 style="color:#2ecc71;">YAPI İNŞA ET</h3>
+    <h3 style="color:#2ecc71; margin-top:0;">YAPI İNŞA ET</h3>
     <div id="build-options"></div>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="background:red; color:white;">KAPAT</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:10px; background:#c0392b; color:#fff;">İPTAL</button>
 </div>
 
 <div id="klan-listesi">
-    <div class="klan-item" style="color: gold;">👑 LORD</div>
     <div class="klan-item" style="color: #2ecc71;">AVAR</div>
     <div class="klan-item" style="color: #9b59b6;">D.A.İ</div>
     <div class="klan-item" style="color: #e74c3c;">SPARTA</div>
-    <div class="klan-item" style="color: #555;">EŞKIYA</div>
+    <div class="klan-item" style="color: #556b2f;">VAMPİRE</div>
+    <div class="klan-item" style="color: #ffc0cb;">NOR</div>
+    <div class="klan-item" style="color: #ff0000;">CRM</div>
 </div>
 
 <div id="login">
     <h1>STRATEJİ ODASI</h1>
-    <input type="text" id="pName" placeholder="İsim Yaz">
+    <input type="text" id="pName" placeholder="İsim">
     <select id="pKlan">
-        <option value="">Taraf Seç...</option>
-        <option value="LORD" data-color="gold">YÜCE LORD (Kale Simge)</option>
+        <option value="">Klan Seçin...</option>
         <option value="AVAR" data-color="#2ecc71">AVAR</option>
         <option value="D.A.İ" data-color="#9b59b6">D.A.İ</option>
         <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
-        <option value="ESKIYA" data-color="#444">EŞKIYA (Siyah Savaşçı)</option>
+        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE</option>
+        <option value="NOR" data-color="#ffc0cb">NOR</option>
+        <option value="CRM" data-color="#ff0000">CRM</option>
     </select>
-    <button onclick="basla()">SEFERE BAŞLA</button>
+    <button onclick="basla()">BAŞLA</button>
 </div>
 
 <div id="ui">
     <div id="timer">HAZIR</div>
-    <div id="build-status" style="color:gold;"></div>
+    <div id="build-timer"></div>
 </div>
 
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" class="unit" style="display:none;" onclick="showBuildMenu()">
-            <img id="pImg" class="unit-img" src="">
+            <span id="pIcon" class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
         </div>
     </div>
 </div>
 
 <script>
-    // --- BURASI ÇOK ÖNEMLİ: Klasöründeki dosya isimleriyle aynı olmalı ---
-    const assets = {
-        koy: '1004.png',
-        kale: '1005.png',
-        sehir: '1006.png',
-        liman: '1008.png',
-        gemi: '1007.png',
-        eskiya: '1775228955923.png',
-        lord: '1005.png' // Lord için kale simgesi
-    };
-
-    let x = 0, y = 0, SIZE = 80;
-    let lastMove = 0, buildEnd = 0, structures = [];
-    let role = "";
+    let x = 0, y = 0;
+    const SIZE = 80;
+    let lastMoveTime = 0;
+    let buildEndTime = 0;
+    let structures = []; // Mevcut yapıların listesi
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -107,21 +107,15 @@
 
     function basla() {
         const name = document.getElementById('pName').value.trim();
-        const kSel = document.getElementById('pKlan');
-        if(!name || !kSel.value) return alert("Eksik bilgi!");
+        const klan = document.getElementById('pKlan');
+        if(!name || !klan.value) return;
 
-        role = kSel.value;
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
-        
-        // Güvenli noktada başlat
-        while(true) {
-            let rx = Math.floor(Math.random() * 180), ry = Math.floor(Math.random() * 90);
-            if(!isSea(rx, ry)) { x = rx; y = ry; break; }
-        }
+        findSafeStart();
 
         document.getElementById('nameTag').innerText = name;
-        document.getElementById('nameTag').style.backgroundColor = kSel.options[kSel.selectedIndex].dataset.color;
+        document.getElementById('nameTag').style.backgroundColor = klan.options[klan.selectedIndex].dataset.color;
         document.getElementById('login').style.display = 'none';
         player.style.display = 'flex';
         updateUnit();
@@ -135,89 +129,114 @@
         return (p[0] < 150 && p[1] < 150 && p[2] < 150);
     }
 
-    function updateUnit() {
-        player.style.left = (x * SIZE) + "px";
-        player.style.top = (y * SIZE) + "px";
-        const pImg = document.getElementById('pImg');
-
-        if(isSea(x,y)) {
-            pImg.src = assets.gemi;
-        } else {
-            if(role === "LORD") pImg.src = assets.lord;
-            else if(role === "ESKIYA") pImg.src = assets.eskiya;
-            else pImg.src = "🏇"; // Normal klanlar için emoji veya atli.png
+    function findSafeStart() {
+        while(true) {
+            let rx = Math.floor(Math.random() * 180), ry = Math.floor(Math.random() * 90);
+            if(!isSea(rx, ry)) { x = rx; y = ry; break; }
         }
     }
 
     function showBuildMenu() {
-        if(Date.now() < buildEnd) return;
+        if (Date.now() < buildEndTime) return alert("Hali hazırda bir inşaat sürüyor!");
+        
         const menu = document.getElementById('build-menu');
-        const opt = document.getElementById('build-options');
-        opt.innerHTML = '';
+        const options = document.getElementById('build-options');
+        options.innerHTML = '';
         menu.style.display = 'block';
 
         const types = [
-            {n: 'Köy (2h)', s: 7200, img: assets.koy},
-            {n: 'Kale (4h)', s: 14400, img: assets.kale},
-            {n: 'Şehir (5h)', s: 18000, img: assets.sehir}
+            {n: 'Köy (2h)', s: 7200, i: '🏡'},
+            {n: 'Kale (4h)', s: 14400, i: '🏰'},
+            {n: 'Şehir (5h)', s: 18000, i: '🏙️'}
         ];
 
-        if(isSea(x+1,y)||isSea(x-1,y)||isSea(x,y+1)||isSea(x,y-1)) 
-            types.push({n: 'Liman (3h)', s: 10800, img: assets.liman});
+        // Liman kontrolü (çevrede deniz var mı?)
+        let nearSea = isSea(x+1, y) || isSea(x-1, y) || isSea(x, y+1) || isSea(x, y-1);
+        if(nearSea) types.push({n: 'Liman (3h)', s: 10800, i: '⚓'});
 
         types.forEach(t => {
-            let b = document.createElement('button');
-            b.className = 'build-btn';
-            b.innerText = t.n;
-            b.onclick = () => {
-                if(structures.some(s => Math.abs(s.x-x)<4 && Math.abs(s.y-y)<4)) return alert("Mesafe yetersiz!");
-                buildEnd = Date.now() + (t.s * 1000);
-                menu.style.display = 'none';
-                setTimeout(() => {
-                    const d = document.createElement('div');
-                    d.className = 'building';
-                    d.style.left = (x*SIZE + 40)+"px"; d.style.top = (y*SIZE + 40)+"px";
-                    d.innerHTML = `<img src="${t.img}">`;
-                    document.getElementById('map').appendChild(d);
-                    structures.push({x,y});
-                }, t.s * 1000);
-            };
-            opt.appendChild(b);
+            let btn = document.createElement('button');
+            btn.className = 'build-btn';
+            btn.innerText = t.n;
+            btn.onclick = () => startBuild(t);
+            options.appendChild(btn);
         });
     }
 
-    document.getElementById('map').onclick = function(e) {
-        if(e.target.id !== 'map-img') return;
-        const cd = isSea(x,y) ? 10000 : 5000;
-        if(Date.now() - lastMove < cd) return;
+    function startBuild(type) {
+        // 4 Kare mesafe kontrolü
+        const tooClose = structures.some(s => Math.abs(s.x - x) < 4 && Math.abs(s.y - y) < 4);
+        if(tooClose) return alert("Yakında başka bir yapı var! (En az 4 kare mesafe gerek)");
 
-        const tx = Math.floor(e.offsetX / SIZE), ty = Math.floor(e.offsetY / SIZE);
-        if(Math.abs(tx-x) + Math.abs(ty-y) === 1) {
+        buildEndTime = Date.now() + (type.s * 1000);
+        document.getElementById('build-menu').style.display = 'none';
+        
+        // Simülasyon bitince yapıyı ekle
+        setTimeout(() => {
+            createBuilding(x, y, type.i);
+        }, type.s * 1000);
+    }
+
+    function createBuilding(bx, by, icon) {
+        const b = document.createElement('div');
+        b.className = 'building';
+        b.style.left = (bx * SIZE) + "px";
+        b.style.top = (by * SIZE) + "px";
+        b.innerText = icon;
+        document.getElementById('map').appendChild(b);
+        structures.push({x: bx, y: by, type: icon});
+    }
+
+    function updateUnit() {
+        player.style.left = (x * SIZE) + "px";
+        player.style.top = (y * SIZE) + "px";
+        document.getElementById('pIcon').innerText = isSea(x, y) ? "🚢" : "🏇";
+    }
+
+    document.getElementById('map').onclick = function(e) {
+        if (e.target.id !== 'map-img') return; // Yapıya veya oyuncuya tıklanırsa hareket etme
+        const now = Date.now();
+        const cd = isSea(x,y) ? 10000 : 5000;
+        if (now - lastMoveTime < cd) return;
+
+        const tx = Math.floor(e.offsetX / SIZE);
+        const ty = Math.floor(e.offsetY / SIZE);
+
+        if (Math.abs(tx - x) + Math.abs(ty - y) === 1) {
             x = tx; y = ty;
-            lastMove = Date.now();
+            lastMoveTime = now;
             updateUnit();
         }
     };
 
     setInterval(() => {
         const now = Date.now();
-        const cd = isSea(x,y) ? 10000 : 5000;
-        document.getElementById('timer').innerText = (now-lastMove < cd) ? `İNTİKAL: ${Math.ceil((cd-(now-lastMove))/1000)}s` : "HAZIR";
-        if(now < buildEnd) document.getElementById('build-status').innerText = `İnşaat Sürüyor: ${Math.ceil((buildEnd-now)/1000)}s`;
-        else document.getElementById('build-status').innerText = "";
+        const bTimer = document.getElementById('build-timer');
+        if (now < buildEndTime) {
+            let remain = Math.ceil((buildEndTime - now) / 1000);
+            bTimer.innerText = `İnşaat Sürüyor: ${remain}s`;
+        } else {
+            bTimer.innerText = "";
+        }
     }, 500);
 
+    // Takip oku fonksiyonu (Öncekiyle aynı)
     function updateArrow() {
-        const r = player.getBoundingClientRect(), arrow = document.getElementById('tracker-arrow');
-        if (r.left>=0 && r.right<=window.innerWidth && r.top>=0 && r.bottom<=window.innerHeight) arrow.style.display='none';
-        else {
-            arrow.style.display='block';
-            let ax = Math.min(Math.max(r.left+40, 20), window.innerWidth-40), ay = Math.min(Math.max(r.top+40, 80), window.innerHeight-40);
+        const r = player.getBoundingClientRect();
+        const arrow = document.getElementById('tracker-arrow');
+        if (r.left>=0 && r.right<=window.innerWidth && r.top>=0 && r.bottom<=window.innerHeight) {
+            arrow.style.display = 'none';
+        } else {
+            arrow.style.display = 'block';
+            let ax = Math.min(Math.max(r.left+30, 20), window.innerWidth-40);
+            let ay = Math.min(Math.max(r.top+30, 80), window.innerHeight-40);
             arrow.style.left = ax+"px"; arrow.style.top = ay+"px";
-            arrow.style.transform = `rotate(${Math.atan2((r.top+40)-ay, (r.left+40)-ax)*(180/Math.PI)-90}deg)`;
+            const angle = Math.atan2((r.top+30)-ay, (r.left+30)-ax);
+            arrow.style.transform = `rotate(${angle*(180/Math.PI)-90}deg)`;
         }
         requestAnimationFrame(updateArrow);
     }
 </script>
+
 </body>
 </html>
