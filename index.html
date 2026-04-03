@@ -1,46 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Savaş Odası - Canlı</title>
+    <title>Dünya Savaş Arenası</title>
     <style>
-        body { margin: 0; background: #1a1a1a; color: #ebc26a; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #f1c40f; font-family: 'Times New Roman', serif; overflow: hidden; }
+        
+        /* Giriş Ekranı */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 12px; border: 2px solid #ebc26a; background: #222; color: white; margin-bottom: 10px; width: 200px; }
-        button { padding: 10px 20px; background: #ebc26a; border: none; font-weight: bold; cursor: pointer; }
-        
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; text-align: center; border-bottom: 2px solid #ebc26a; z-index: 10; }
-        
-        /* Harita Kutusu */
-        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; background: #222; }
+        input { padding: 12px; border: 2px solid #f1c40f; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; }
+        button { padding: 10px 25px; background: #f1c40f; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+
+        /* Üst Panel */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; text-align: center; border-bottom: 2px solid #f1c40f; z-index: 10; }
+        #timer { font-size: 18px; font-weight: bold; color: #e74c3c; margin-top: 5px; }
+
+        /* Harita ve Dünya Resmi */
+        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; background: #001f3f; }
         #map { 
-            width: 5000px; height: 2500px; 
-            background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png'); /* Geçici belirgin desen */
+            width: 10000px; height: 5000px; /* Devasa alan */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
+            background-size: cover; 
+            background-repeat: no-repeat;
             position: relative; 
         }
 
-        /* Oyuncu */
-        .unit { 
-            position: absolute; width: 60px; height: 60px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 5;
-        }
-        .unit-icon { font-size: 40px; text-shadow: 0 0 10px gold; }
-        .unit-name { font-size: 12px; background: black; padding: 2px 5px; border: 1px solid gold; border-radius: 4px; }
+        /* Oyuncu Karakteri */
+        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; transition: all 0.4s; }
+        .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
+        .unit-name { font-size: 14px; background: black; padding: 2px 8px; border: 1px solid gold; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div id="login">
-    <h1>KOMUTAN GİRİŞİ</h1>
-    <input type="text" id="pName" placeholder="Adınız">
-    <button onclick="basla()">GİRİŞ YAP</button>
+    <h1 style="letter-spacing: 3px;">SAVAŞ ODASI</h1>
+    <input type="text" id="pName" placeholder="Komutan İsmi (Sayı Yasak)" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <button onclick="basla()">SEFERE ÇIK</button>
 </div>
 
 <div id="ui">
-    <div id="msg">Atı yürütmek için yanındaki boşluğa dokun!</div>
-    <div id="coords">Konum: --, --</div>
+    <div id="msg">Hedef seçmek için haritaya dokun!</div>
+    <div id="timer">HAZIR</div>
+    <div id="coords" style="font-size: 11px; color: #888;">Konum: --, --</div>
 </div>
 
 <div id="viewport">
@@ -53,35 +56,64 @@
 </div>
 
 <script>
-    let x = 20, y = 20; // Kaybolmamak için daha yakın bir noktada başlatıyoruz
-    const SIZE = 60;
+    let x = 100, y = 50; // Başlangıç konumu
+    const SIZE = 80; // Adım genişliği
+    let lastMoveTime = 0;
+    const cooldown = 5000; // 5 saniye
 
     function basla() {
-        const name = document.getElementById('pName').value;
-        if(!name) return;
+        const name = document.getElementById('pName').value.trim();
+        if(name.length < 2) return alert("Geçerli bir isim girin!");
+        
         document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
         document.getElementById('player').style.display = 'flex';
-        ciz();
+        render();
     }
 
-    function ciz() {
+    function render() {
         const p = document.getElementById('player');
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
         document.getElementById('coords').innerText = `Konum: ${x}, ${y}`;
-        
-        // EKRANI OYUNCUYA KAYDIR (Sihirli dokunuş!)
         p.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
 
+    // Zamanlayıcı Döngüsü
+    setInterval(() => {
+        const now = Date.now();
+        const diff = now - lastMoveTime;
+        const timerDiv = document.getElementById('timer');
+        
+        if (diff < cooldown) {
+            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
+            timerDiv.style.color = "#e74c3c";
+        } else {
+            timerDiv.innerText = "HAZIR";
+            timerDiv.style.color = "#2ecc71";
+        }
+    }, 500);
+
     document.getElementById('map').onclick = function(e) {
+        const now = Date.now();
+        if (now - lastMoveTime < cooldown) return;
+
+        // Tıklanan koordinatı hesapla
         const tx = Math.floor(e.offsetX / SIZE);
         const ty = Math.floor(e.offsetY / SIZE);
 
-        if(Math.abs(tx - x) + Math.abs(ty - y) === 1) {
+        // Hareket Kuralı: Sadece 1 kare ve çapraz yasak
+        const dist = Math.abs(tx - x) + Math.abs(ty - y);
+        
+        if (dist === 1) {
             x = tx; y = ty;
-            ciz();
+            lastMoveTime = now;
+            render();
+            document.getElementById('msg').innerText = "✅ İlerleme Başarılı";
+            document.getElementById('msg').style.color = "#2ecc71";
+        } else if (dist !== 0) {
+            document.getElementById('msg').innerText = "❌ Çok uzak veya çapraz!";
+            document.getElementById('msg').style.color = "#f1c40f";
         }
     };
 </script>
