@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Elazığ Savaş Odası</title>
+    <style>
+        body { margin: 0; background: #000; color: #ebc26a; font-family: sans-serif; overflow: hidden; }
+        #login { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input { padding: 15px; border-radius: 8px; border: 2px solid #ebc26a; background: #111; color: white; margin-bottom: 15px; font-size: 16px; width: 250px; }
+        button { padding: 12px 30px; background: #ebc26a; color: #000; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 18px; }
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 15px; text-align: center; border-bottom: 2px solid #ebc26a; z-index: 10; font-size: 14px; }
+        #map-container { width: 100vw; height: 100vh; overflow: auto; position: relative; cursor: crosshair; }
+        /* ARKA PLAN RESMİ: Buraya kendi harita linkini koyabilirsin */
+        #map-bg { 
+            position: absolute; top: 0; left: 0; 
+            width: 25000px; height: 5000px; /* 500x100 kare x 50px */
+            background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop'); 
+            background-repeat: repeat; opacity: 0.5;
+        }
+        .unit { position: absolute; width: 50px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.4s ease-in-out; z-index: 5; }
+        .unit-icon { font-size: 32px; filter: drop-shadow(0 0 5px gold); }
+        .unit-name { font-size: 12px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; border: 1px solid #ebc26a; margin-top: 2px; white-space: nowrap; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="login">
+    <h1 style="color:#ebc26a">KOMUTAN GİRİŞİ</h1>
+    <input type="text" id="pName" placeholder="Adınızı Yazın..." maxlength="15">
+    <button onclick="basla()">SAVAŞA KATIL</button>
+</div>
+
+<div id="ui">
+    <div id="bilgi">Hoş Geldiniz Komutan!</div>
+    <div id="coords" style="color:#aaa; font-size:12px; margin-top:5px">Konum: --, --</div>
+</div>
+
+<div id="map-container" id="view">
+    <div id="map-bg"></div>
+    <div id="units"></div>
+</div>
+
+<script>
+    let isim = "";
+    let x = 250, y = 50, sonHareket = 0;
+    const BOYUT = 50; 
+
+    function basla() {
+        const input = document.getElementById('pName').value.trim();
+        if(input.length < 2) return alert("İsim çok kısa!");
+        isim = input;
+        document.getElementById('login').style.display = 'none';
+        olustur();
+    }
+
+    function olustur() {
+        const units = document.getElementById('units');
+        const unit = document.createElement('div');
+        unit.id = "ben";
+        unit.className = "unit";
+        unit.innerHTML = `<span class="unit-icon">🏇</span><span class="unit-name">${isim}</span>`;
+        units.appendChild(unit);
+        guncelle();
+    }
+
+    function guncelle() {
+        const unit = document.getElementById('ben');
+        unit.style.left = (x * BOYUT) + "px";
+        unit.style.top = (y * BOYUT) + "px";
+        document.getElementById('coords').innerText = `Koordinat: ${x}, ${y}`;
+        unit.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+
+    document.getElementById('map-container').onclick = function(e) {
+        if(!isim) return;
+        const simdi = Date.now();
+        if(simdi - sonHareket < 5000) {
+            document.getElementById('bilgi').innerText = "⏳ BEKLE: " + Math.ceil((5000-(simdi-sonHareket))/1000) + " saniye!";
+            document.getElementById('bilgi').style.color = "red";
+            return;
+        }
+
+        const rect = this.getBoundingClientRect();
+        const tx = Math.floor((e.pageX + this.scrollLeft) / BOYUT);
+        const ty = Math.floor((e.pageY + this.scrollTop - 60) / BOYUT);
+
+        if(Math.abs(tx - x) + Math.abs(ty - y) === 1) {
+            x = tx; y = ty;
+            sonHareket = simdi;
+            guncelle();
+            document.getElementById('bilgi').innerText = "✅ İlerleme Başarılı!";
+            document.getElementById('bilgi').style.color = "#2ecc71";
+        }
+    };
+</script>
+
+</body>
+</html>
