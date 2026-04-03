@@ -3,154 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Savaş Haritası - Stabil</title>
+    <title>Kara ve Deniz Savaşları</title>
     <style>
-        /* Temel Ayarlar */
-        body { margin: 0; background: #000b1a; color: #2ecc71; font-family: sans-serif; overflow: hidden; }
-        
+        body { margin: 0; background: #000; color: #2ecc71; font-family: sans-serif; overflow: hidden; }
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; border-radius: 8px; }
         button { padding: 10px 25px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-
-        /* Arayüz */
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
         #timer { font-size: 18px; font-weight: bold; color: #ff4757; }
-
-        /* YEŞİL TAKİP OKU */
-        #tracker-arrow {
-            position: fixed; width: 0; height: 0;
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-bottom: 25px solid #2ecc71; z-index: 60; display: none;
-            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
-        }
-
-        /* Harita Konteynırı - Sarsıntısız Kaydırma */
-        #viewport { 
-            width: 100vw; height: 100vh; 
-            overflow: auto; /* Tarayıcının kendi kaydırma sistemini kullanıyoruz, en stabil budur */
-            background: #000;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        #map { 
-            width: 15000px; height: 8000px; 
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
-            background-size: 100% 100%;
-            position: relative;
-        }
-
-        /* Karakter */
-        .unit { 
-            position: absolute; width: 60px; height: 60px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 10; transition: all 0.5s ease-in-out;
-        }
-        .unit-icon { font-size: 40px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 12px; background: rgba(0,0,0,0.9); color: #fff; padding: 2px 6px; border: 1px solid #2ecc71; border-radius: 4px; white-space: nowrap; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
+        #map { width: 15000px; height: 8000px; position: relative; }
+        #map-img { width: 100%; height: 100%; display: block; }
+        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: all 0.5s; }
+        .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
+        .unit-name { font-size: 12px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border: 1px solid #2ecc71; border-radius: 4px; white-space: nowrap; }
+        canvas { display: none; } /* Renk tespiti için gizli tuval */
     </style>
 </head>
 <body>
 
-<div id="tracker-arrow"></div>
+<canvas id="colorDetector"></canvas>
 
 <div id="login">
-    <h1 style="color:#2ecc71;">KOMUTAN GİRİŞİ</h1>
-    <input type="text" id="pName" placeholder="İsim (Sayı Yasak)" oninput="this.value = this.value.replace(/[0-9]/g, '')">
-    <button onclick="basla()">SEFERE ÇIK</button>
+    <h1>STRATEJİ MERKEZİ</h1>
+    <input type="text" id="pName" placeholder="Komutan İsmi" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <button onclick="basla()">SEFERE BAŞLA</button>
 </div>
 
 <div id="ui">
-    <div id="timer">HAREKETE HAZIR</div>
-    <div id="coords" style="font-size: 10px; color: #888;">X: --, Y: --</div>
+    <div id="status">Bölge: Keşfediliyor...</div>
+    <div id="timer">HAZIR</div>
 </div>
 
 <div id="viewport">
-    <div id="map" id="gameMap">
+    <div id="map">
+        <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" class="unit" style="display:none;">
-            <span class="unit-icon">🏇</span>
+            <span id="pIcon" class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
         </div>
     </div>
 </div>
 
 <script>
-    let x = 150, y = 80; // Başlangıç
-    const SIZE = 80; // Kare ölçeği
+    let x = 150, y = 80;
+    const SIZE = 80;
     let lastMoveTime = 0;
-    const cooldown = 5000;
+    let currentCooldown = 5000;
+    let isSea = false;
 
-    const viewport = document.getElementById('viewport');
-    const player = document.getElementById('player');
-    const arrow = document.getElementById('tracker-arrow');
+    const img = document.getElementById('map-img');
+    const canvas = document.getElementById('colorDetector');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     function basla() {
         const name = document.getElementById('pName').value.trim();
-        if(name.length < 2) return alert("Geçerli bir isim girin!");
+        if(!name) return;
         document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
-        player.style.display = 'flex';
+        document.getElementById('player').style.display = 'flex';
         
-        // Atı başlangıçta merkeze al
+        // Harita verisini canvas'a çek (Renk tespiti için)
+        canvas.width = 1500; // Performans için küçük ölçek
+        canvas.height = 800;
+        ctx.drawImage(img, 0, 0, 1500, 800);
+        
         render();
-        setTimeout(() => {
-            player.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-        }, 500);
+        document.getElementById('player').scrollIntoView({ block: 'center', inline: 'center' });
+    }
 
-        requestAnimationFrame(updateArrow);
+    function checkArea(targetX, targetY) {
+        // Haritadaki koordinatın rengini kontrol et
+        const mapW = 15000, mapH = 8000;
+        const sampleX = (targetX * SIZE / mapW) * canvas.width;
+        const sampleY = (targetY * SIZE / mapH) * canvas.height;
+        
+        const pixel = ctx.getImageData(sampleX, sampleY, 1, 1).data;
+        // pixel[0,1,2] -> R,G,B değerleri. Siyah/Koyu renkler düşük değerlerdir.
+        // Eğer renk çok koyuysa denizdir (Basit bir eşik değeri: 50)
+        return (pixel[0] < 100 && pixel[1] < 100 && pixel[2] < 100);
     }
 
     function render() {
-        player.style.left = (x * SIZE) + "px";
-        player.style.top = (y * SIZE) + "px";
-        document.getElementById('coords').innerText = `Konum: ${x}, ${y}`;
-    }
-
-    // YEŞİL OK TAKİP SİSTEMİ
-    function updateArrow() {
-        const pRect = player.getBoundingClientRect();
-        const vWidth = window.innerWidth;
-        const vHeight = window.innerHeight;
-
-        // Karakter ekran dışındaysa oku göster
-        if (pRect.left >= 0 && pRect.right <= vWidth && pRect.top >= 0 && pRect.bottom <= vHeight) {
-            arrow.style.display = 'none';
+        const p = document.getElementById('player');
+        const icon = document.getElementById('pIcon');
+        const status = document.getElementById('status');
+        
+        isSea = checkArea(x, y);
+        
+        if(isSea) {
+            icon.innerText = "🚢";
+            currentCooldown = 10000;
+            status.innerText = "Bölge: Engin Denizler (10s)";
+            status.style.color = "#3498db";
         } else {
-            arrow.style.display = 'block';
-            let arrowX = Math.min(Math.max(pRect.left + 30, 20), vWidth - 40);
-            let arrowY = Math.min(Math.max(pRect.top + 30, 80), vHeight - 40);
-            arrow.style.left = arrowX + "px";
-            arrow.style.top = arrowY + "px";
-
-            const angle = Math.atan2((pRect.top + 30) - arrowY, (pRect.left + 30) - arrowX);
-            arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
+            icon.innerText = "🏇";
+            currentCooldown = 5000;
+            status.innerText = "Bölge: Kara Toprakları (5s)";
+            status.style.color = "#2ecc71";
         }
-        requestAnimationFrame(updateArrow);
+
+        p.style.left = (x * SIZE) + "px";
+        p.style.top = (y * SIZE) + "px";
     }
 
-    // Hareket Mekaniği
-    document.getElementById('map').addEventListener('click', function(e) {
+    document.getElementById('map').onclick = function(e) {
         const now = Date.now();
-        if (now - lastMoveTime < cooldown) return;
+        if (now - lastMoveTime < currentCooldown) return;
 
-        // Tıklanan yerin koordinatını hesapla
         const tx = Math.floor(e.offsetX / SIZE);
         const ty = Math.floor(e.offsetY / SIZE);
 
-        const dist = Math.abs(tx - x) + Math.abs(ty - y);
-        if (dist === 1) {
+        if (Math.abs(tx - x) + Math.abs(ty - y) === 1) {
             x = tx; y = ty;
             lastMoveTime = now;
             render();
         }
-    });
+    };
 
-    // Zamanlayıcı
     setInterval(() => {
-        const now = Date.now();
-        const diff = now - lastMoveTime;
+        const diff = Date.now() - lastMoveTime;
         const timerDiv = document.getElementById('timer');
-        if (diff < cooldown) {
-            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
+        if (diff < currentCooldown) {
+            timerDiv.innerText = "İNTİKAL: " + Math.ceil((currentCooldown - diff) / 1000) + "s";
             timerDiv.style.color = "#ff4757";
         } else {
             timerDiv.innerText = "HAREKETE HAZIR";
