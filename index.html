@@ -3,42 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dünya Savaş Arenası - Navigasyonlu</title>
+    <title>Dev Dünya Atlası - Strateji</title>
     <style>
-        body { margin: 0; background: #000; color: #f1c40f; font-family: 'Times New Roman', serif; overflow: hidden; }
+        body { margin: 0; background: #000b1a; color: #f1c40f; font-family: 'Georgia', serif; overflow: hidden; }
         
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 12px; border: 2px solid #f1c40f; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; }
-        button { padding: 10px 25px; background: #f1c40f; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        input { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; text-align: center; font-size: 18px; border-radius: 10px; }
+        button { padding: 12px 30px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; }
 
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; text-align: center; border-bottom: 2px solid #f1c40f; z-index: 50; }
-        #timer { font-size: 18px; font-weight: bold; color: #e74c3c; margin-top: 5px; }
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 15px; text-align: center; border-bottom: 2px solid #2ecc71; z-index: 50; }
+        #timer { font-size: 20px; font-weight: bold; color: #ff4757; margin-top: 5px; }
 
-        /* Navigasyon Oku (Yeşil) */
+        /* Yeşil Takip Oku */
         #tracker-arrow {
-            position: fixed;
-            width: 0; height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-bottom: 30px solid #2ecc71; /* Yeşil Ok */
-            z-index: 60;
-            display: none; /* Sadece karakter ekran dışındayken görünecek */
-            filter: drop-shadow(0 0 10px #2ecc71);
-            pointer-events: none;
+            position: fixed; width: 0; height: 0;
+            border-left: 15px solid transparent; border-right: 15px solid transparent;
+            border-bottom: 30px solid #2ecc71; z-index: 60; display: none;
+            filter: drop-shadow(0 0 15px #2ecc71); pointer-events: none;
         }
 
-        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; background: #001f3f; scroll-behavior: smooth; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; scroll-behavior: smooth; }
         #map { 
-            width: 10000px; height: 5000px; 
+            /* DEV ÖLÇEK: 20.000 piksel genişlik */
+            width: 20000px; height: 10000px; 
             background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
-            background-size: cover; 
+            background-size: 100% 100%; 
             background-repeat: no-repeat;
             position: relative; 
         }
 
-        .unit { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; transition: all 0.4s; }
-        .unit-icon { font-size: 50px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 14px; background: black; padding: 2px 8px; border: 1px solid gold; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
+        .unit { position: absolute; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .unit-icon { font-size: 70px; filter: drop-shadow(0 0 15px gold); }
+        .unit-name { font-size: 18px; background: rgba(0,0,0,0.9); color: #fff; padding: 4px 12px; border: 2px solid #2ecc71; border-radius: 8px; white-space: nowrap; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -46,19 +42,19 @@
 <div id="tracker-arrow"></div>
 
 <div id="login">
-    <h1>SAVAŞ ODASI</h1>
-    <input type="text" id="pName" placeholder="Komutan İsmi" oninput="this.value = this.value.replace(/[0-9]/g, '')">
-    <button onclick="basla()">SEFERE ÇIK</button>
+    <h1 style="color:#2ecc71; text-shadow: 0 0 10px #2ecc71;">DÜNYA HAKİMİYETİ</h1>
+    <input type="text" id="pName" placeholder="Komutan İsmi Giriniz" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <button onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
 
 <div id="ui">
-    <div id="msg">Atın nerede? Yeşil oku takip et!</div>
+    <div id="msg" style="font-size: 16px;">Kıtalararası Yolculuk: Tıkla ve İlerle!</div>
     <div id="timer">HAZIR</div>
-    <div id="coords" style="font-size: 11px; color: #888;">Konum: --, --</div>
+    <div id="coords" style="font-size: 12px; color: #888; margin-top:5px;">Mevcut Konum: --, --</div>
 </div>
 
-<div id="viewport" id="vPort">
-    <div id="map" id="mapMain">
+<div id="viewport">
+    <div id="map">
         <div id="player" class="unit" style="display:none;">
             <span class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
@@ -67,8 +63,9 @@
 </div>
 
 <script>
-    let x = 60, y = 30; 
-    const SIZE = 100; 
+    // Başlangıç: Türkiye civarı (Tahmini koordinat)
+    let x = 20, y = 15; 
+    const SIZE = 500; // ÖLÇEK: Her tık 500 piksel (Çok büyük mesafe!)
     let lastMoveTime = 0;
     const cooldown = 5000;
 
@@ -89,49 +86,46 @@
     function render() {
         player.style.left = (x * SIZE) + "px";
         player.style.top = (y * SIZE) + "px";
-        document.getElementById('coords').innerText = `Konum: ${x}, ${y}`;
+        document.getElementById('coords').innerText = `Enlem/Boylam: ${x}, ${y}`;
         player.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
 
-    // YEŞİL OK MANTIĞI
+    // YEŞİL TAKİP OKU SİSTEMİ
     function updateArrow() {
         const pRect = player.getBoundingClientRect();
         const vWidth = window.innerWidth;
         const vHeight = window.innerHeight;
 
-        // Karakter ekranın içindeyse oku gizle
         if (pRect.left >= 0 && pRect.right <= vWidth && pRect.top >= 0 && pRect.bottom <= vHeight) {
             arrow.style.display = 'none';
         } else {
             arrow.style.display = 'block';
-            
-            // Okun pozisyonunu belirle
-            let arrowX = Math.min(Math.max(pRect.left + 40, 20), vWidth - 40);
-            let arrowY = Math.min(Math.max(pRect.top + 40, 80), vHeight - 40);
-            
+            let arrowX = Math.min(Math.max(pRect.left + 60, 30), vWidth - 30);
+            let arrowY = Math.min(Math.max(pRect.top + 60, 100), vHeight - 30);
             arrow.style.left = arrowX + "px";
             arrow.style.top = arrowY + "px";
 
-            // Atın olduğu yöne doğru oku döndür
-            const angle = Math.atan2((pRect.top + 40) - arrowY, (pRect.left + 40) - arrowX);
+            const angle = Math.atan2((pRect.top + 60) - arrowY, (pRect.left + 60) - arrowX);
             arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
         }
         requestAnimationFrame(updateArrow);
     }
 
+    // 5 Saniye Sayacı
     setInterval(() => {
         const now = Date.now();
         const diff = now - lastMoveTime;
         const timerDiv = document.getElementById('timer');
         if (diff < cooldown) {
-            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
-            timerDiv.style.color = "#e74c3c";
+            timerDiv.innerText = "İNTİKAL SÜRESİ: " + Math.ceil((cooldown - diff) / 1000) + "s";
+            timerDiv.style.color = "#ff4757";
         } else {
-            timerDiv.innerText = "HAZIR";
+            timerDiv.innerText = "HAREKETE HAZIR";
             timerDiv.style.color = "#2ecc71";
         }
     }, 500);
 
+    // Hareket Mekaniği
     document.getElementById('map').onclick = function(e) {
         const now = Date.now();
         if (now - lastMoveTime < cooldown) return;
@@ -144,8 +138,11 @@
             x = tx; y = ty;
             lastMoveTime = now;
             render();
-            document.getElementById('msg').innerText = "✅ İlerleme Başarılı";
+            document.getElementById('msg').innerText = "✅ Başarıyla İlerledin";
             document.getElementById('msg').style.color = "#2ecc71";
+        } else if (dist !== 0) {
+            document.getElementById('msg').innerText = "❌ Çok uzak! Sadece bitişik bölgelere.";
+            document.getElementById('msg').style.color = "#f1c40f";
         }
     };
 </script>
