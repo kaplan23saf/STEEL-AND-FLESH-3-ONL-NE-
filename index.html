@@ -3,94 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Elazığ Savaş Odası</title>
+    <title>Savaş Odası - Canlı</title>
     <style>
-        body { margin: 0; background: #000; color: #ebc26a; font-family: sans-serif; overflow: hidden; }
-        #login { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 15px; border-radius: 8px; border: 2px solid #ebc26a; background: #111; color: white; margin-bottom: 15px; font-size: 16px; width: 250px; }
-        button { padding: 12px 30px; background: #ebc26a; color: #000; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 18px; }
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 15px; text-align: center; border-bottom: 2px solid #ebc26a; z-index: 10; font-size: 14px; }
-        #map-container { width: 100vw; height: 100vh; overflow: auto; position: relative; cursor: crosshair; }
-        /* ARKA PLAN RESMİ: Buraya kendi harita linkini koyabilirsin */
-        #map-bg { 
-            position: absolute; top: 0; left: 0; 
-            width: 25000px; height: 5000px; /* 500x100 kare x 50px */
-            background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop'); 
-            background-repeat: repeat; opacity: 0.5;
+        body { margin: 0; background: #1a1a1a; color: #ebc26a; font-family: sans-serif; overflow: hidden; }
+        #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input { padding: 12px; border: 2px solid #ebc26a; background: #222; color: white; margin-bottom: 10px; width: 200px; }
+        button { padding: 10px 20px; background: #ebc26a; border: none; font-weight: bold; cursor: pointer; }
+        
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; text-align: center; border-bottom: 2px solid #ebc26a; z-index: 10; }
+        
+        /* Harita Kutusu */
+        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; background: #222; }
+        #map { 
+            width: 5000px; height: 2500px; 
+            background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png'); /* Geçici belirgin desen */
+            position: relative; 
         }
-        .unit { position: absolute; width: 50px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.4s ease-in-out; z-index: 5; }
-        .unit-icon { font-size: 32px; filter: drop-shadow(0 0 5px gold); }
-        .unit-name { font-size: 12px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; border: 1px solid #ebc26a; margin-top: 2px; white-space: nowrap; font-weight: bold; }
+
+        /* Oyuncu */
+        .unit { 
+            position: absolute; width: 60px; height: 60px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 5;
+        }
+        .unit-icon { font-size: 40px; text-shadow: 0 0 10px gold; }
+        .unit-name { font-size: 12px; background: black; padding: 2px 5px; border: 1px solid gold; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div id="login">
-    <h1 style="color:#ebc26a">KOMUTAN GİRİŞİ</h1>
-    <input type="text" id="pName" placeholder="Adınızı Yazın..." maxlength="15">
-    <button onclick="basla()">SAVAŞA KATIL</button>
+    <h1>KOMUTAN GİRİŞİ</h1>
+    <input type="text" id="pName" placeholder="Adınız">
+    <button onclick="basla()">GİRİŞ YAP</button>
 </div>
 
 <div id="ui">
-    <div id="bilgi">Hoş Geldiniz Komutan!</div>
-    <div id="coords" style="color:#aaa; font-size:12px; margin-top:5px">Konum: --, --</div>
+    <div id="msg">Atı yürütmek için yanındaki boşluğa dokun!</div>
+    <div id="coords">Konum: --, --</div>
 </div>
 
-<div id="map-container" id="view">
-    <div id="map-bg"></div>
-    <div id="units"></div>
+<div id="viewport">
+    <div id="map">
+        <div id="player" class="unit" style="display:none;">
+            <span class="unit-icon">🏇</span>
+            <span id="nameTag" class="unit-name"></span>
+        </div>
+    </div>
 </div>
 
 <script>
-    let isim = "";
-    let x = 250, y = 50, sonHareket = 0;
-    const BOYUT = 50; 
+    let x = 20, y = 20; // Kaybolmamak için daha yakın bir noktada başlatıyoruz
+    const SIZE = 60;
 
     function basla() {
-        const input = document.getElementById('pName').value.trim();
-        if(input.length < 2) return alert("İsim çok kısa!");
-        isim = input;
+        const name = document.getElementById('pName').value;
+        if(!name) return;
+        document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
-        olustur();
+        document.getElementById('player').style.display = 'flex';
+        ciz();
     }
 
-    function olustur() {
-        const units = document.getElementById('units');
-        const unit = document.createElement('div');
-        unit.id = "ben";
-        unit.className = "unit";
-        unit.innerHTML = `<span class="unit-icon">🏇</span><span class="unit-name">${isim}</span>`;
-        units.appendChild(unit);
-        guncelle();
+    function ciz() {
+        const p = document.getElementById('player');
+        p.style.left = (x * SIZE) + "px";
+        p.style.top = (y * SIZE) + "px";
+        document.getElementById('coords').innerText = `Konum: ${x}, ${y}`;
+        
+        // EKRANI OYUNCUYA KAYDIR (Sihirli dokunuş!)
+        p.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
 
-    function guncelle() {
-        const unit = document.getElementById('ben');
-        unit.style.left = (x * BOYUT) + "px";
-        unit.style.top = (y * BOYUT) + "px";
-        document.getElementById('coords').innerText = `Koordinat: ${x}, ${y}`;
-        unit.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    }
-
-    document.getElementById('map-container').onclick = function(e) {
-        if(!isim) return;
-        const simdi = Date.now();
-        if(simdi - sonHareket < 5000) {
-            document.getElementById('bilgi').innerText = "⏳ BEKLE: " + Math.ceil((5000-(simdi-sonHareket))/1000) + " saniye!";
-            document.getElementById('bilgi').style.color = "red";
-            return;
-        }
-
-        const rect = this.getBoundingClientRect();
-        const tx = Math.floor((e.pageX + this.scrollLeft) / BOYUT);
-        const ty = Math.floor((e.pageY + this.scrollTop - 60) / BOYUT);
+    document.getElementById('map').onclick = function(e) {
+        const tx = Math.floor(e.offsetX / SIZE);
+        const ty = Math.floor(e.offsetY / SIZE);
 
         if(Math.abs(tx - x) + Math.abs(ty - y) === 1) {
             x = tx; y = ty;
-            sonHareket = simdi;
-            guncelle();
-            document.getElementById('bilgi').innerText = "✅ İlerleme Başarılı!";
-            document.getElementById('bilgi').style.color = "#2ecc71";
+            ciz();
         }
     };
 </script>
