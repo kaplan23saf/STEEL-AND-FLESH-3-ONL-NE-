@@ -2,57 +2,70 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
-    <title>Savaş Haritası - Zoom Destekli</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Savaş Haritası - Stabil</title>
     <style>
-        body { margin: 0; background: #000; color: #2ecc71; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        /* Temel Ayarlar */
+        body { margin: 0; background: #000b1a; color: #2ecc71; font-family: sans-serif; overflow: hidden; }
         
-        #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: auto; }
+        #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; border-radius: 8px; }
         button { padding: 10px 25px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
 
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
-        #timer { font-size: 16px; font-weight: bold; color: #ff4757; }
+        /* Arayüz */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
+        #timer { font-size: 18px; font-weight: bold; color: #ff4757; }
 
-        /* Zoom ve Kaydırma İçerici */
-        #container { width: 100vw; height: 100vh; overflow: hidden; position: relative; cursor: grab; }
+        /* YEŞİL TAKİP OKU */
+        #tracker-arrow {
+            position: fixed; width: 0; height: 0;
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-bottom: 25px solid #2ecc71; z-index: 60; display: none;
+            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
+        }
+
+        /* Harita Konteynırı - Sarsıntısız Kaydırma */
+        #viewport { 
+            width: 100vw; height: 100vh; 
+            overflow: auto; /* Tarayıcının kendi kaydırma sistemini kullanıyoruz, en stabil budur */
+            background: #000;
+            -webkit-overflow-scrolling: touch;
+        }
         
         #map { 
-            width: 20000px; 
-            height: 10000px; 
+            width: 15000px; height: 8000px; 
             background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); 
-            background-size: cover;
-            position: absolute;
-            transform-origin: 0 0;
-            will-change: transform;
+            background-size: 100% 100%;
+            position: relative;
         }
 
+        /* Karakter */
         .unit { 
-            position: absolute; 
-            width: 50px; height: 50px; 
+            position: absolute; width: 60px; height: 60px; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 10;
-            transition: left 0.4s, top 0.4s;
+            z-index: 10; transition: all 0.5s ease-in-out;
         }
-        .unit-icon { font-size: 40px; filter: drop-shadow(0 0 5px gold); }
-        .unit-name { font-size: 12px; background: black; color: #fff; padding: 2px 6px; border: 1px solid #2ecc71; border-radius: 4px; white-space: nowrap; }
+        .unit-icon { font-size: 40px; filter: drop-shadow(0 0 10px gold); }
+        .unit-name { font-size: 12px; background: rgba(0,0,0,0.9); color: #fff; padding: 2px 6px; border: 1px solid #2ecc71; border-radius: 4px; white-space: nowrap; }
     </style>
 </head>
 <body>
 
+<div id="tracker-arrow"></div>
+
 <div id="login">
-    <h1>SAVAŞ ALANI</h1>
-    <input type="text" id="pName" placeholder="İsim Yazın" oninput="this.value = this.value.replace(/[0-9]/g, '')">
-    <button onclick="basla()">BAĞLAN</button>
+    <h1 style="color:#2ecc71;">KOMUTAN GİRİŞİ</h1>
+    <input type="text" id="pName" placeholder="İsim (Sayı Yasak)" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <button onclick="basla()">SEFERE ÇIK</button>
 </div>
 
 <div id="ui">
-    <div id="timer">HAZIR</div>
-    <div style="font-size: 10px;">Zoom: Parmakla sıkıştır | Hareket: Dokun</div>
+    <div id="timer">HAREKETE HAZIR</div>
+    <div id="coords" style="font-size: 10px; color: #888;">X: --, Y: --</div>
 </div>
 
-<div id="container">
-    <div id="map">
+<div id="viewport">
+    <div id="map" id="gameMap">
         <div id="player" class="unit" style="display:none;">
             <span class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
@@ -61,91 +74,67 @@
 </div>
 
 <script>
-    let x = 200, y = 100;
-    const SIZE = 50;
+    let x = 150, y = 80; // Başlangıç
+    const SIZE = 80; // Kare ölçeği
     let lastMoveTime = 0;
     const cooldown = 5000;
 
-    // Zoom ve Kaydırma Değişkenleri
-    let scale = 0.5; // Başlangıç uzaklığı
-    let posX = 0, posY = 0;
-    const mapEl = document.getElementById('map');
-    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
+    const player = document.getElementById('player');
+    const arrow = document.getElementById('tracker-arrow');
 
     function basla() {
         const name = document.getElementById('pName').value.trim();
-        if(!name) return;
+        if(name.length < 2) return alert("Geçerli bir isim girin!");
         document.getElementById('nameTag').innerText = name;
         document.getElementById('login').style.display = 'none';
-        document.getElementById('player').style.display = 'flex';
+        player.style.display = 'flex';
         
-        // Atı merkeze al
-        posX = -(x * SIZE * scale) + (window.innerWidth / 2);
-        posY = -(y * SIZE * scale) + (window.innerHeight / 2);
-        updateTransform();
+        // Atı başlangıçta merkeze al
         render();
+        setTimeout(() => {
+            player.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+        }, 500);
+
+        requestAnimationFrame(updateArrow);
     }
 
     function render() {
-        const p = document.getElementById('player');
-        p.style.left = (x * SIZE) + "px";
-        p.style.top = (y * SIZE) + "px";
+        player.style.left = (x * SIZE) + "px";
+        player.style.top = (y * SIZE) + "px";
+        document.getElementById('coords').innerText = `Konum: ${x}, ${y}`;
     }
 
-    function updateTransform() {
-        mapEl.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    // YEŞİL OK TAKİP SİSTEMİ
+    function updateArrow() {
+        const pRect = player.getBoundingClientRect();
+        const vWidth = window.innerWidth;
+        const vHeight = window.innerHeight;
+
+        // Karakter ekran dışındaysa oku göster
+        if (pRect.left >= 0 && pRect.right <= vWidth && pRect.top >= 0 && pRect.bottom <= vHeight) {
+            arrow.style.display = 'none';
+        } else {
+            arrow.style.display = 'block';
+            let arrowX = Math.min(Math.max(pRect.left + 30, 20), vWidth - 40);
+            let arrowY = Math.min(Math.max(pRect.top + 30, 80), vHeight - 40);
+            arrow.style.left = arrowX + "px";
+            arrow.style.top = arrowY + "px";
+
+            const angle = Math.atan2((pRect.top + 30) - arrowY, (pRect.left + 30) - arrowX);
+            arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
+        }
+        requestAnimationFrame(updateArrow);
     }
 
-    // Dokunmatik ve Mouse ile Harita Kontrolü (Zoom & Pan)
-    let isDragging = false;
-    let startX, startY;
-    let initialDist = -1;
-
-    container.onmousedown = (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; container.style.cursor = 'grabbing'; };
-    window.onmouseup = () => { isDragging = false; container.style.cursor = 'grab'; };
-    window.onmousemove = (e) => {
-        if (!isDragging) return;
-        posX = e.clientX - startX;
-        posY = e.clientY - startY;
-        updateTransform();
-    };
-
-    // Mobil Zoom ve Kaydırma
-    container.ontouchstart = (e) => {
-        if (e.touches.length === 2) {
-            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        } else {
-            startX = e.touches[0].pageX - posX;
-            startY = e.touches[0].pageY - posY;
-        }
-    };
-
-    container.ontouchmove = (e) => {
-        if (e.touches.length === 2) {
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            const zoom = dist / initialDist;
-            scale = Math.min(Math.max(scale * zoom, 0.1), 3);
-            initialDist = dist;
-            updateTransform();
-        } else {
-            posX = e.touches[0].pageX - startX;
-            posY = e.touches[0].pageY - startY;
-            updateTransform();
-        }
-    };
-
-    // Tıklama ile Hareket
-    container.onclick = (e) => {
+    // Hareket Mekaniği
+    document.getElementById('map').addEventListener('click', function(e) {
         const now = Date.now();
-        if (now - lastMoveTime < cooldown || isDragging) return;
+        if (now - lastMoveTime < cooldown) return;
 
-        // Harita üzerindeki gerçek koordinatı bul (Zoom dikkate alınarak)
-        const rect = mapEl.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) / scale;
-        const clickY = (e.clientY - rect.top) / scale;
-
-        const tx = Math.floor(clickX / SIZE);
-        const ty = Math.floor(clickY / SIZE);
+        // Tıklanan yerin koordinatını hesapla
+        const tx = Math.floor(e.offsetX / SIZE);
+        const ty = Math.floor(e.offsetY / SIZE);
 
         const dist = Math.abs(tx - x) + Math.abs(ty - y);
         if (dist === 1) {
@@ -153,12 +142,20 @@
             lastMoveTime = now;
             render();
         }
-    };
+    });
 
-    // Timer Döngüsü
+    // Zamanlayıcı
     setInterval(() => {
-        const diff = Date.now() - lastMoveTime;
-        document.getElementById('timer').innerText = diff < cooldown ? "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s" : "HAREKETE HAZIR";
+        const now = Date.now();
+        const diff = now - lastMoveTime;
+        const timerDiv = document.getElementById('timer');
+        if (diff < cooldown) {
+            timerDiv.innerText = "BEKLE: " + Math.ceil((cooldown - diff) / 1000) + "s";
+            timerDiv.style.color = "#ff4757";
+        } else {
+            timerDiv.innerText = "HAREKETE HAZIR";
+            timerDiv.style.color = "#2ecc71";
+        }
     }, 500);
 </script>
 
