@@ -32,7 +32,6 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
-        /* --- KLAN LİSTESİ VE BUTONU --- */
         #clan-list {
             position: fixed; left: 15px; top: 60px; width: 200px;
             background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(46, 204, 113, 0.5);
@@ -47,9 +46,8 @@
         #clan-toggle-btn:hover { background: #2ecc71; color: #000; }
         
         #clans-container {
-            margin-top: 10px; max-height: 400px; overflow-y: auto; display: none; /* Başlangıçta gizli */
+            margin-top: 10px; max-height: 400px; overflow-y: auto; display: none;
         }
-        /* ------------------------------ */
 
         #zoom-controls {
             position: fixed; bottom: 20px; right: 20px; z-index: 500; display: flex; gap: 10px;
@@ -81,7 +79,7 @@
         .build-owner-tag { font-size: 9px; background: rgba(0,0,0,0.85); padding: 2px 5px; border-radius: 3px; white-space: nowrap; margin-top: 1px; text-align: center; border: 1px solid; font-weight: bold; }
 
         #login { position: fixed; inset: 0; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 320px; border-radius: 10px; font-size: 16px; }
+        input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 320px; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         button#start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; text-transform: uppercase; letter-spacing: 2px; }
 
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -124,14 +122,16 @@
     <h1 style="color: #2ecc71; letter-spacing: 5px; text-shadow: 0 0 20px #2ecc71; font-size:2.5em; margin-bottom:30px;">ELAZIĞ CEPHESİ</h1>
     <input type="text" id="pName" placeholder="Kahraman İsmi">
     
-    <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
-        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#9b59b6">DEVLET-İ ALİYYE-İ İSLAM (Mor)</option>
-        <option value="SPARTA" data-color="#e67e22">SPARTA (Turuncu)</option>
-        <option value="CRM" data-color="#e74c3c">CRM (Kırmızı)</option>
-        <option value="VAMPİRE" data-color="#555555">VAMPİRE (Füme)</option>
+    <select id="pKlan" onchange="checkCustomClan()">
+        <option value="AVAR" data-color="#2ecc71">AVAR</option>
+        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#9b59b6">DEVLET-İ ALİYYE-İ İSLAM</option>
+        <option value="SPARTA" data-color="#e67e22">SPARTA</option>
+        <option value="CRM" data-color="#e74c3c">CRM</option>
+        <option value="VAMPİRE" data-color="#555555">VAMPİRE</option>
         <option value="NEW_CLAN" data-color="#ffffff">➕ Yeni Klan Oluştur...</option>
     </select>
+
+    <input type="text" id="pNewClanName" placeholder="Yeni Klanın Adını Girin" style="display:none; border-color:#f1c40f;">
     
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
@@ -164,43 +164,57 @@
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
-    // KLAN LİSTESİNİ AÇIP KAPATAN FONKSİYON
     function toggleClanList() {
         const container = document.getElementById('clans-container');
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
+        container.style.display = (container.style.display === 'none' || container.style.display === '') ? 'block' : 'none';
+    }
+
+    function checkCustomClan() {
+        const sel = document.getElementById('pKlan');
+        const customInput = document.getElementById('pNewClanName');
+        if (sel.value === "NEW_CLAN") {
+            customInput.style.display = "block";
+            customInput.focus();
         } else {
-            container.style.display = 'none';
+            customInput.style.display = "none";
         }
     }
 
     function basla() {
         myName = document.getElementById('pName').value.trim();
         const kSelect = document.getElementById('pKlan');
+        const customClanInput = document.getElementById('pNewClanName').value.trim();
         
-        if(!myName) return alert("Komutan, tarihe geçecek bir isim seçmelisin!");
+        if(!myName) return alert("Komutan, kimliğini gizleyemezsin. Lütfen bir isim gir!");
 
         if(kSelect.value === "NEW_CLAN") {
-            const customClan = prompt("Oluşturmak istediğiniz klanın adını girin:");
-            if(!customClan || customClan.trim() === "") {
-                alert("Geçersiz klan adı!");
-                return;
-            }
-            myKlan = customClan.trim();
-            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
+            if(!customClanInput) return alert("Lütfen kurmak istediğin yeni klanın adını gir!");
+            myKlan = customClanInput;
+            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`; // Canlı rastgele renk
         } else {
             myKlan = kSelect.value;
             myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
         }
 
         canvas.width = 1500; canvas.height = 800;
-        ctx.drawImage(mapImg, 0, 0, 1500, 800);
+        
+        try {
+            ctx.drawImage(mapImg, 0, 0, 1500, 800);
+        } catch(e) { console.log("Harita çizim hatası."); }
 
-        while(true) {
+        // Güvenli Karaya İndirme (CORS çökerse 100,50 karesine atar)
+        let spawnFound = false;
+        let attempts = 0;
+        while(!spawnFound && attempts < 100) {
+            attempts++;
             let rx = Math.floor(Math.random() * 600) + 50;
             let ry = Math.floor(Math.random() * 300) + 50;
-            const pix = ctx.getImageData((rx * SIZE / 15000) * 1500, (ry * SIZE / 8000) * 800, 1, 1).data;
-            if(!(pix[0] < 150 && pix[1] < 150 && pix[2] < 150)) { x = rx; y = ry; break; }
+            try {
+                const pix = ctx.getImageData((rx * SIZE / 15000) * 1500, (ry * SIZE / 8000) * 800, 1, 1).data;
+                if(!(pix[0] < 150 && pix[1] < 150 && pix[2] < 150)) { x = rx; y = ry; spawnFound = true; }
+            } catch(e) {
+                x = 100; y = 50; spawnFound = true; // Hata durumunda acil iniş
+            }
         }
 
         document.getElementById('login').style.display = 'none';
@@ -276,10 +290,7 @@
         
         broadcastLog(`[${myKlan}] ${myName}, ${x},${y} konumunda <b>${bName}</b> (${icon}) inşa etti!`, myColor);
 
-        await supabaseClient
-            .from('structures')
-            .insert([{ owner_name: saveString, type: icon, x: x, y: y }]);
-
+        await supabaseClient.from('structures').insert([{ owner_name: saveString, type: icon, x: x, y: y }]);
         loadWorldData(); 
     }
 
@@ -288,10 +299,13 @@
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
         
-        const pix = ctx.getImageData((x * SIZE / 15000) * 1500, (y * SIZE / 8000) * 800, 1, 1).data;
-        const isSea = (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
-        document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
+        let isSea = false;
+        try {
+            const pix = ctx.getImageData((x * SIZE / 15000) * 1500, (y * SIZE / 8000) * 800, 1, 1).data;
+            isSea = (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
+        } catch(e) {}
         
+        document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
         supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
     }
 
@@ -396,7 +410,6 @@
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
         
-        // GÜNCELLENEN VARSAYILAN KLANLAR
         const clans = {
             "AVAR": { color: "#2ecc71", members: [] },
             "DEVLET-İ ALİYYE-İ İSLAM": { color: "#9b59b6", members: [] },
@@ -408,7 +421,6 @@
         if(dbPlayers) {
             dbPlayers.forEach(p => {
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    // Sistemde olmayan yeni bir klan oluşturulduysa dinamik olarak ekle
                     if(!clans[p.klan]) {
                         clans[p.klan] = { color: p.color || "#ffffff", members: [] };
                     }
@@ -422,15 +434,4 @@
                 u.style.left = (p.x * SIZE) + "px"; u.style.top = (p.y * SIZE) + "px";
                 u.style.zIndex = "80";
                 u.style.display = 'flex'; u.style.flexDirection = 'column'; u.style.alignItems = 'center';
-                u.innerHTML = `<span style="font-size:16px;">🏇</span><span style="background:${p.color}; font-size:7px; padding:1px 2px; border-radius:2px; font-weight:bold;">${p.name}</span>`;
-                mapDiv.appendChild(u);
-            });
-
-            // LİSTEYİ OLUŞTUR VE KUTUYA EKLE
-            for (const klanName in clans) {
-                const c = clans[klanName];
-                const item = document.createElement('div');
-                item.style.marginBottom = "10px";
-                item.innerHTML = `
-                    <div style="color:${c.color}; font-size:13px; font-weight:bold; letter-spacing:0.5px;">${klanName}</div>
-                    <div style="color:#aaa; font-size:11px; margin-top:2px;">${c.members.length > 0 ? c.memb
+                u.innerHTML = `<span style="font-size:16px;">🏇</span><span style="background:${p.color}; font-size:7px; padding:1px 2px; border-radius:2px; font-weight:bold;">${p.name}</
