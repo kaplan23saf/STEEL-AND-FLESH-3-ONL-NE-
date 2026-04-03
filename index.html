@@ -3,57 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klanlar - Elazığ Cephesi</title>
+    <title>Elazığ Cephesi - Komutan</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
         
+        /* KENAR OKU */
         #edge-tracker {
             position: fixed; width: 0; height: 0; 
-            border-left: 12px solid transparent; border-right: 12px solid transparent;
-            border-bottom: 25px solid #2ecc71;
+            border-left: 15px solid transparent; border-right: 15px solid transparent;
+            border-bottom: 30px solid #2ecc71;
             z-index: 1000; display: none; pointer-events: none;
-            filter: drop-shadow(0 0 5px #2ecc71);
+            filter: drop-shadow(0 0 10px #2ecc71);
         }
 
         #notification-container {
-            position: fixed; top: 10px; right: 10px; width: 240px; z-index: 999;
-            display: flex; flex-direction: column; gap: 5px; pointer-events: none;
+            position: fixed; top: 15px; right: 15px; width: 260px; z-index: 999;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
         }
         .notif {
-            background: rgba(0, 0, 0, 0.85); border-right: 4px solid #2ecc71;
-            padding: 8px 12px; font-size: 11px; border-radius: 4px;
+            background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71;
+            padding: 10px 15px; font-size: 12px; border-radius: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards;
         }
 
         #ui-top {
-            position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8);
-            padding: 10px; text-align: center; z-index: 500; border-bottom: 1px solid #2ecc71;
+            position: fixed; top: 0; width: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 15px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
         #build-menu { 
             position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.95); border: 2px solid #2ecc71; padding: 20px;
-            z-index: 1100; display: none; border-radius: 15px; text-align: center;
+            background: rgba(10,10,10,0.98); border: 3px solid #2ecc71; padding: 30px;
+            z-index: 1100; display: none; border-radius: 20px; text-align: center;
+            box-shadow: 0 0 50px rgba(46, 204, 113, 0.2);
         }
-        .build-btn { display: block; width: 220px; padding: 12px; margin: 8px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
+        .build-btn { display: block; width: 250px; padding: 15px; margin: 10px; background: #1a1a1a; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; }
+        .build-btn:hover { background: #2ecc71; color: #000; }
 
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; scroll-behavior: smooth; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000911; scroll-behavior: smooth; }
         #map { width: 15000px; height: 8000px; position: relative; }
-        #map-img { width: 100%; height: 100%; display: block; }
+        #map-img { width: 100%; height: 100%; display: block; opacity: 0.8; }
         
-        #player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: all 0.5s; cursor: pointer; }
-        .arrow-indicator { position: absolute; top: -35px; font-size: 25px; color: #f1c40f; animation: bounce 0.8s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        /* KARAKTER TASARIMI */
+        #player { 
+            position: absolute; width: 100px; height: 100px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 200; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; 
+        }
+        .arrow-indicator { position: absolute; top: -45px; font-size: 35px; color: #f1c40f; filter: drop-shadow(0 0 5px #000); animation: bounce 0.8s infinite; }
+        
+        .building { position: absolute; width: SIZEpx; height: SIZEpx; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; pointer-events: none; }
+        .build-icon { font-size: 55px; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); }
+        .build-owner-tag { font-size: 12px; background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 6px; white-space: nowrap; margin-top: 5px; text-align: center; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
-        .building { position: absolute; width: 100px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
-        .build-icon { font-size: 45px; filter: drop-shadow(0 0 10px rgba(0,0,0,1)); }
-        .build-owner-tag { font-size: 11px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; white-space: nowrap; margin-top: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        #login { position: fixed; inset: 0; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 280px; border-radius: 10px; font-size: 16px; }
+        button#start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; text-transform: uppercase; letter-spacing: 2px; }
 
-        #login { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; border-radius: 8px; }
-        button#start-btn { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; } }
         canvas { display: none; }
@@ -66,30 +75,32 @@
 <div id="notification-container"></div>
 
 <div id="ui-top">
-    <span id="move-timer" style="font-weight:bold; color:#2ecc71;">HAREKET: HAZIR</span>
-    <span id="build-status" style="margin-left:20px; color:#f1c40f; font-weight:bold;"></span>
+    <span id="move-timer" style="font-weight:bold; font-size: 1.2em;">HAREKET: HAZIR</span>
+    <span id="build-status" style="margin-left:25px; color:#f1c40f; font-weight:bold;"></span>
 </div>
 
 <div id="build-menu">
-    <h3 style="color:#2ecc71; margin-top:0;">YAPI İNŞA ET</h3>
+    <h2 style="color:#2ecc71; margin-top:0;">YAPI İNŞA ET</h2>
+    <p style="color: #888; font-size: 13px;">Bulunduğun konuma bir eser bırak!</p>
     <button class="build-btn" onclick="startBuild('Köy', '🏡', 15)">Köy (15s)</button>
     <button class="build-btn" onclick="startBuild('Kale', '🏰', 30)">Kale (30s)</button>
     <button class="build-btn" onclick="startBuild('Şehir', '🏙️', 45)">Şehir (45s)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:10px; background:#c0392b; color:#fff; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;">İPTAL</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:15px; background:transparent; color:#e74c3c; border:none; cursor:pointer; font-weight:bold;">VAZGEÇ</button>
 </div>
 
 <div id="login">
-    <h1 style="color: #2ecc71; letter-spacing: 2px;">ELAZIĞ STRATEJİ</h1>
-    <input type="text" id="pName" placeholder="Karakter İsmi">
+    <h1 style="color: #2ecc71; letter-spacing: 5px; text-shadow: 0 0 20px #2ecc71;">ELAZIĞ CEPHESİ</h1>
+    <p style="color: #888; margin-bottom: 30px;">Strateji ve Fetih Dünyasına Hoş Geldin</p>
+    <input type="text" id="pName" placeholder="Kahraman İsmi">
     <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR</option>
-        <option value="D.A.İ" data-color="#9b59b6">D.A.İ</option>
-        <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
-        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE</option>
-        <option value="NOR" data-color="#ffc0cb">NOR</option>
-        <option value="CRM" data-color="#ff0000">CRM</option>
+        <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
+        <option value="D.A.İ" data-color="#9b59b6">D.A.İ (Mor)</option>
+        <option value="SPARTA" data-color="#e74c3c">SPARTA (Kırmızı)</option>
+        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE (Koyu Yeşil)</option>
+        <option value="NOR" data-color="#ffc0cb">NOR (Pembe)</option>
+        <option value="CRM" data-color="#ff0000">CRM (Al)</option>
     </select>
-    <button id="start-btn" onclick="basla()">SAVAŞA GİR</button>
+    <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
 
 <div id="viewport">
@@ -97,8 +108,8 @@
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" style="display:none;" onclick="openBuildMenu()">
             <div class="arrow-indicator">▼</div>
-            <span id="pIcon" style="font-size:45px;">🏇</span>
-            <span id="nameTag" style="font-size:12px; padding:2px 8px; border-radius:4px; font-weight:bold; margin-top:5px;"></span>
+            <span id="pIcon" style="font-size:60px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));">🏇</span>
+            <span id="nameTag" style="font-size:14px; padding:4px 12px; border-radius:8px; font-weight:bold; margin-top:5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></span>
         </div>
     </div>
 </div>
@@ -124,7 +135,7 @@
         const kSelect = document.getElementById('pKlan');
         myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
         myKlan = kSelect.value;
-        if(!myName) return alert("Komutan, bir isim girmelisiniz!");
+        if(!myName) return alert("Komutan, tarihe geçecek bir isim seçmelisin!");
 
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
@@ -160,8 +171,8 @@
 
         if (isOffScreen) {
             tracker.style.display = 'block';
-            let tx = Math.min(Math.max(rect.left + 40, 20), window.innerWidth - 40);
-            let ty = Math.min(Math.max(rect.top + 40, 80), window.innerHeight - 40);
+            let tx = Math.min(Math.max(rect.left + 40, 25), window.innerWidth - 45);
+            let ty = Math.min(Math.max(rect.top + 40, 90), window.innerHeight - 45);
             tracker.style.left = tx + 'px';
             tracker.style.top = ty + 'px';
             const angle = Math.atan2((rect.top + 40) - ty, (rect.left + 40) - tx);
@@ -178,40 +189,42 @@
     }
 
     async function startBuild(typeLabel, icon, duration) {
+        // Bina mesafesi kontrolü
         const tooClose = structures.some(s => Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2)) < 5);
         if(tooClose) {
-            addNotification("⚠️ Çok Yakın! Diğer yapılardan en az 5 kare uzaklaşın.", "#e74c3c");
+            addNotification("⚠️ Çok Yakın! Diğer yapılardan uzaklaşmalısın.", "#e74c3c");
             document.getElementById('build-menu').style.display = 'none';
             return;
         }
 
-        const bName = prompt(`${typeLabel} için bir isim verin:`);
+        const bName = prompt(`${typeLabel} yapısına ne isim vereceksin?`);
         if(!bName) return;
 
         buildEndTime = Date.now() + (duration * 1000);
         document.getElementById('build-menu').style.display = 'none';
 
+        // Veri yapısı: İsim||Renk||YapıAdı
         const saveString = `${myName}||${myColor}||${bName}`;
         
-        // 1. ADIM: İnşaat simgesini (🏗️) hemen veritabanına gönder
+        // 1. ADIM: Anında VINÇ (🏗️) simgesini veritabanına at
         const { data, error } = await supabaseClient
             .from('structures')
             .insert([{ owner_name: saveString, type: '🏗️', x: x, y: y }])
             .select();
 
         if (error) {
-            console.error("İnşaat başlatılamadı:", error);
+            addNotification("❌ Bağlantı hatası!", "#e74c3c");
             return;
         }
 
         if(data && data.length > 0) {
             const buildId = data[0].id;
-            broadcastLog(`[${myKlan}] ${myName} bir inşaat başlattı... 🏗️`, myColor);
+            broadcastLog(`[${myKlan}] ${myName}, ${x},${y} konumunda <b>${typeLabel}</b> inşa ediyor... 🏗️`, myColor);
             
-            // 2. ADIM: Haritayı hemen zorla güncelle
+            // Haritayı hemen zorla tazele (🏗️ görünmesi için)
             await loadWorldData();
 
-            // 3. ADIM: Süre dolunca sembolü güncelle
+            // 2. ADIM: Süre dolunca VINÇ'i asıl yapıya (🏰) çevir
             setTimeout(async () => {
                 const { error: updateError } = await supabaseClient
                     .from('structures')
@@ -219,8 +232,8 @@
                     .eq('id', buildId);
 
                 if (!updateError) {
-                    broadcastLog(`[${myKlan}] ${myName}, ${bName} yapısını bitirdi! ${icon}`, myColor);
-                    loadWorldData(); // Bitiş sembolünü göster
+                    broadcastLog(`[${myKlan}] ${myName}, <b>${bName}</b> yapısını tamamladı! ${icon}`, myColor);
+                    loadWorldData();
                 }
             }, duration * 1000);
         }
@@ -233,6 +246,7 @@
         const pix = ctx.getImageData((x * SIZE / 15000) * 1500, (y * SIZE / 8000) * 800, 1, 1).data;
         const isSea = (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
         document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
+        
         supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
     }
 
@@ -259,15 +273,15 @@
         const diff = now - lastMoveTime;
 
         if(diff < cd) {
-            mTimer.innerText = `HAREKET: ${Math.ceil((cd-diff)/1000)}s`;
+            mTimer.innerText = `⏳ ${Math.ceil((cd-diff)/1000)}s`;
             mTimer.style.color = "#e74c3c";
         } else {
-            mTimer.innerText = "HAREKET: HAZIR";
+            mTimer.innerText = "✅ HAZIR";
             mTimer.style.color = "#2ecc71";
         }
 
         if(now < buildEndTime) {
-            bStatus.innerText = `| İNŞAAT: ${Math.ceil((buildEndTime-now)/1000)}s`;
+            bStatus.innerText = `| 🏗️ İNŞA: ${Math.ceil((buildEndTime-now)/1000)}s`;
         } else { bStatus.innerText = ""; }
     }, 500);
 
@@ -275,7 +289,7 @@
         const container = document.getElementById('notification-container');
         const n = document.createElement('div');
         n.className = 'notif';
-        n.style.borderRightColor = color;
+        n.style.borderColor = color;
         n.innerHTML = msg;
         container.appendChild(n);
         setTimeout(() => n.remove(), 5000);
@@ -289,7 +303,7 @@
     async function initMultiplayer() {
         supabaseClient.channel('world-logs').on('broadcast', { event: 'new_log' }, (p) => addNotification(p.payload.msg, p.payload.color)).subscribe();
         loadWorldData();
-        setInterval(loadWorldData, 5000);
+        setInterval(loadWorldData, 5000); // 5 saniyede bir dünyayı tazele
     }
 
     async function loadWorldData() {
@@ -297,7 +311,8 @@
         const { data: dbPlayers } = await supabaseClient.from('players').select('*');
         const mapDiv = document.getElementById('map');
         
-        Array.from(mapDiv.children).forEach(c => { if(c.id !== 'map-img' && c.id !== 'player') c.remove(); });
+        // Sadece diğer oyuncuları ve yapıları temizle (kendini ve haritayı tut)
+        Array.from(mapDiv.querySelectorAll('.building, .other-unit')).forEach(c => c.remove());
         structures = []; 
 
         if(dbStructures) {
@@ -319,12 +334,14 @@
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
-                if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 300000) return; 
+                if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 120000) return; 
                 const u = document.createElement('div');
-                u.className = 'building'; // Aynı stil özellikleri için
+                u.className = 'other-unit';
+                u.style.position = 'absolute';
                 u.style.left = (p.x * SIZE) + "px"; u.style.top = (p.y * SIZE) + "px";
-                u.style.zIndex = "90";
-                u.innerHTML = `<span style="font-size:40px;">🏇</span><br><span style="background:${p.color}; font-size:10px; padding:2px 5px; border-radius:3px; font-weight:bold;">${p.name}</span>`;
+                u.style.zIndex = "80";
+                u.style.display = 'flex'; u.style.flexDirection = 'column'; u.style.alignItems = 'center';
+                u.innerHTML = `<span style="font-size:50px;">🏇</span><span style="background:${p.color}; font-size:10px; padding:2px 5px; border-radius:3px; font-weight:bold;">${p.name}</span>`;
                 mapDiv.appendChild(u);
             });
         }
