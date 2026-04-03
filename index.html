@@ -3,24 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klanlar - Izgara Operasyonu</title>
+    <title>Elazığ Strateji - Kesin Çözüm</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 12px; text-align: center; z-index: 1600; border-bottom: 1px solid #2ecc71; }
+        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 12px; text-align: center; z-index: 1600; border-bottom: 2px solid #2ecc71; }
         #notification-container { position: fixed; top: 10px; right: 10px; width: 280px; z-index: 2000; pointer-events: none; }
-        .notif { background: rgba(0,0,0,0.9); border-right: 5px solid #2ecc71; padding: 10px; font-size: 11px; margin-bottom: 5px; border-radius: 4px; animation: slideIn 0.3s ease; }
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
+        .notif { background: rgba(0,0,0,0.95); border-right: 5px solid #2ecc71; padding: 10px; font-size: 12px; margin-bottom: 5px; border-radius: 4px; border: 1px solid #333; }
+        
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; scroll-behavior: smooth; }
         #map { width: 15000px; height: 8000px; position: relative; }
         #map-img { width: 100%; height: 100%; display: block; }
+
+        /* YAPI VE OYUNCU KATMANLARI */
         .building { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
-        .build-icon { font-size: 45px; }
-        .build-tag { font-size: 10px; background: rgba(0,0,0,0.85); padding: 2px 5px; border-radius: 4px; border: 1px solid; text-align: center; }
-        #player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: 0.4s ease-out; }
-        #build-menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #0a0a0a; border: 2px solid #2ecc71; padding: 25px; z-index: 2500; display: none; border-radius: 15px; text-align: center; }
-        .build-btn { display: block; width: 220px; padding: 12px; margin: 8px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
+        .build-icon { font-size: 50px; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        .build-tag { font-size: 10px; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; border: 1px solid; text-align: center; margin-top: 2px; }
+        
+        #player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: 0.3s ease-out; cursor: pointer; }
+        
+        #build-menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #111; border: 3px solid #2ecc71; padding: 30px; z-index: 2500; display: none; border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,1); }
+        .build-btn { display: block; width: 200px; padding: 15px; margin: 10px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; font-weight: bold; border-radius: 10px; }
+        .build-btn:hover { background: #2ecc71; color: #000; }
+        
         #login { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        input { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; border-radius: 10px; width: 250px; margin-bottom: 20px; }
         canvas { display: none; }
     </style>
 </head>
@@ -30,29 +37,29 @@
 <div id="notification-container"></div>
 <div id="ui-top">
     <span id="move-timer" style="font-weight:bold; color:#2ecc71;">HAREKET: HAZIR</span>
-    <span id="build-status" style="margin-left:20px; color:#f1c40f;"></span>
+    <span id="build-status" style="margin-left:20px; color:#f1c40f; font-weight:bold;"></span>
 </div>
 
 <div id="build-menu">
-    <h3 style="color:#2ecc71;">YAPI İNŞA ET</h3>
-    <button class="build-btn" onclick="startBuild('Köy', '🏡', 15)">Köy (15s)</button>
-    <button class="build-btn" onclick="startBuild('Kale', '🏰', 30)">Kale (30s)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; background:none; border:none; cursor:pointer;">KAPAT</button>
+    <h2 style="color:#2ecc71; margin-top:0;">YAPI SEÇİMİ</h2>
+    <button class="build-btn" onclick="startBuild('Köy', '🏡', 15)">🏡 KÖY (15s)</button>
+    <button class="build-btn" onclick="startBuild('Kale', '🏰', 30)">🏰 KALE (30s)</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer;">İPTAL</button>
 </div>
 
 <div id="login">
-    <h1 style="color:#2ecc71;">ELAZIĞ STRATEJİ</h1>
-    <input type="text" id="pName" placeholder="Karakter İsmi" style="padding:10px; margin:5px; width:200px;">
-    <button onclick="basla()" style="padding:10px 30px; background:#2ecc71; border:none; font-weight:bold;">BAŞLA</button>
+    <h1 style="color:#2ecc71; letter-spacing: 5px;">ELAZIĞ STRATEJİ</h1>
+    <input type="text" id="pName" placeholder="KOMUTAN ADI">
+    <button onclick="basla()" style="padding:15px 50px; background:#2ecc71; border:none; font-weight:bold; border-radius:10px; cursor:pointer;">ORDUYU YÖNET</button>
 </div>
 
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" style="display:none;" onclick="openBuildMenu()">
-            <div style="color:#f1c40f; margin-bottom:-10px;">▼</div>
-            <span id="pIcon" style="font-size:45px;">🏇</span>
-            <span id="nameTag" style="font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;"></span>
+            <div style="color:#f1c40f; font-size:20px; animation: bounce 1s infinite;">▼</div>
+            <span style="font-size:50px;">🏇</span>
+            <span id="nameTag" style="font-size:12px; padding:3px 8px; border-radius:5px; font-weight:bold; color:white;"></span>
         </div>
     </div>
 </div>
@@ -60,34 +67,32 @@
 <script>
     const supabaseClient = window.supabase.createClient("https://nfyqinmktmmdurklsred.supabase.co", "Sb_publishable_M6G0bwXo3kkFf9wGY9xz_A_DlDWrvm8");
 
-    let x = 0, y = 0;
+    let x = 100, y = 50; 
     const SIZE = 80;
     let buildEndTime = 0, lastMoveTime = 0;
-    let myId = Math.random().toString(36).substr(2, 9), myName = "Anonim", myColor = "#2ecc71";
+    let myName = "Komutan", myColor = "#2ecc71";
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
     function basla() {
-        myName = document.getElementById('pName').value.trim() || "Savaşçı";
-        x = 100; y = 50; // Başlangıç
+        myName = document.getElementById('pName').value.trim() || "Bilinmeyen";
         document.getElementById('login').style.display = 'none';
         document.getElementById('player').style.display = 'flex';
         document.getElementById('nameTag').innerText = myName;
         document.getElementById('nameTag').style.background = myColor;
-        
-        // Harita verisini canvas'a işle (Deniz kontrolü için)
+
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
         
         updateUnit();
-        initLoop();
+        initSystems();
     }
 
     function checkIsSea(cx, cy) {
         const pix = ctx.getImageData((cx * SIZE / 15000) * 1500, (cy * SIZE / 8000) * 800, 1, 1).data;
-        return (pix[0] < 140 && pix[1] < 140 && pix[2] < 140);
+        return (pix[0] < 150 && pix[1] < 150 && pix[2] < 150); // Siyah kare kontrolü
     }
 
     function openBuildMenu() {
@@ -98,56 +103,65 @@
     async function startBuild(typeLabel, finalIcon, duration) {
         // 1. Deniz Kontrolü
         if(checkIsSea(x, y)) {
-            addNotification("⚠️ Deniz ortasına inşaat yapılamaz!", "red");
+            addNotification("⚠️ Denize inşaat yapamazsın!", "red");
             return;
         }
 
-        // 2. Koordinat Bazlı Mesafe Kontrolü (Tam sayı kare hesabı)
-        const { data: allStructures } = await supabaseClient.from('structures').select('x, y');
-        const tooClose = allStructures?.some(s => {
+        // 2. Mesafe Kontrolü (Tam sayı kare farkı)
+        const { data: list } = await supabaseClient.from('structures').select('x, y');
+        const tooClose = list?.some(s => {
             const dx = Math.abs(Math.floor(s.x) - Math.floor(x));
             const dy = Math.abs(Math.floor(s.y) - Math.floor(y));
-            // Aynı karede değilse (0,0 değilse) ama 5 kareden yakınsa engelle
-            return (dx === 0 && dy === 0) ? false : (dx < 5 && dy < 5);
+            return (dx === 0 && dy === 0) ? false : (dx < 5 && dy < 5); // 5x5 alan kontrolü
         });
 
         if(tooClose) {
-            addNotification("⚠️ Bu alan çok kalabalık! Diğer yapılara 5 kare mesafe lazım.", "orange");
+            addNotification("⚠️ Çok Yakın! En az 5 kare uzağa yapmalısın.", "orange");
             return;
         }
 
-        const bName = prompt("Yapı ismi:");
+        const bName = prompt("Yapı İsmi:");
         if(!bName) return;
 
         document.getElementById('build-menu').style.display = 'none';
         buildEndTime = Date.now() + (duration * 1000);
 
-        // 3. İNŞAATI BAŞLAT (VİNÇ SİMGESİ İLE)
+        // 3. YEREL GÖRÜNÜMÜ ANINDA OLUŞTUR (Vinç Görünsün Diye)
+        createLocalVisual(x, y, '🏗️', bName);
+
         const saveStr = `${myName}||${myColor}||${bName}`;
-        const { data: newBuild } = await supabaseClient.from('structures').insert({
+        const { data } = await supabaseClient.from('structures').insert({
             owner_name: saveStr,
             type: '🏗️',
             x: Math.floor(x),
             y: Math.floor(y)
         }).select();
 
-        if(newBuild && newBuild[0]) {
-            addNotification(`🏗️ ${typeLabel} inşaatı başladı...`, "yellow");
+        if(data && data[0]) {
+            addNotification(`🏗️ ${typeLabel} inşaatına başlandı...`, "cyan");
             
-            // 4. SÜRE BİTİMİNDE DÖNÜŞÜM
             setTimeout(async () => {
-                await supabaseClient.from('structures').update({ type: finalIcon }).eq('id', newBuild[0].id);
-                addNotification(`✅ ${bName} inşaatı tamamlandı!`, "#2ecc71");
-                loadData();
+                await supabaseClient.from('structures').update({ type: finalIcon }).eq('id', data[0].id);
+                addNotification(`✅ ${bName} tamamlandı!`, "#2ecc71");
+                loadData(); // Sembolün değişmesi için veriyi tazele
             }, duration * 1000);
         }
+    }
+
+    function createLocalVisual(lx, ly, icon, title) {
+        const mapDiv = document.getElementById('map');
+        const b = document.createElement('div');
+        b.className = 'building local-temp';
+        b.style.left = (lx * SIZE) + "px";
+        b.style.top = (ly * SIZE) + "px";
+        b.innerHTML = `<span class="build-icon">${icon}</span><span class="build-tag" style="color:${myColor}; border-color:${myColor}">${myName}<br><b>${title}</b></span>`;
+        mapDiv.appendChild(b);
     }
 
     function updateUnit() {
         const p = document.getElementById('player');
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
-        document.getElementById('pIcon').innerText = checkIsSea(x, y) ? "🚢" : "🏇";
         
         const vp = document.getElementById('viewport');
         vp.scrollTo((x * SIZE) - (window.innerWidth / 2), (y * SIZE) - (window.innerHeight / 2));
@@ -169,46 +183,7 @@
     async function loadData() {
         const { data: dbStr } = await supabaseClient.from('structures').select('*');
         const mapDiv = document.getElementById('map');
-        mapDiv.querySelectorAll('.building').forEach(b => b.remove());
-
-        dbStr?.forEach(s => {
-            const pInfo = s.owner_name.split("||");
-            const bEl = document.createElement('div');
-            bEl.className = 'building';
-            bEl.style.left = (s.x * SIZE) + "px";
-            bEl.style.top = (s.y * SIZE) + "px";
-            bEl.innerHTML = `
-                <span class="build-icon">${s.type}</span>
-                <span class="build-tag" style="color:${pInfo[1]}; border-color:${pInfo[1]}">
-                    ${pInfo[0]}<br><b>${pInfo[2]||''}</b>
-                </span>`;
-            mapDiv.appendChild(bEl);
-        });
-    }
-
-    function addNotification(text, color) {
-        const container = document.getElementById('notification-container');
-        const div = document.createElement('div');
-        div.className = 'notif';
-        div.style.borderRightColor = color;
-        div.innerText = text;
-        container.appendChild(div);
-        setTimeout(() => div.remove(), 5000);
-    }
-
-    function initLoop() {
-        loadData();
-        setInterval(loadData, 5000);
-        setInterval(() => {
-            const diff = Date.now() - lastMoveTime;
-            const cd = checkIsSea(x, y) ? 8000 : 4000;
-            document.getElementById('move-timer').innerText = diff < cd ? `BEKLE: ${Math.ceil((cd-diff)/1000)}s` : "HAREKET: HAZIR";
-            
-            if(Date.now() < buildEndTime) {
-                document.getElementById('build-status').innerText = `| İNŞAAT SÜRÜYOR: ${Math.ceil((buildEndTime - Date.now())/1000)}s`;
-            } else { document.getElementById('build-status').innerText = ""; }
-        }, 500);
-    }
-</script>
-</body>
-</html>
+        
+        // Sadece kesinleşmiş yapıları temizle ve yeniden çiz
+        mapDiv.querySelectorAll('.building').forEach(b => {
+    
