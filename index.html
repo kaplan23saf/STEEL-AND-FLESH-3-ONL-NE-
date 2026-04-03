@@ -3,35 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Savaş Odası - Klanlar</title>
+    <title>Savaş Odası - Revize</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
         
-        /* Giriş Paneli */
         #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; border-radius: 8px; }
         button { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
 
-        /* Sol Üst Klan Listesi (Çerçevesiz ve Şeffaf) */
+        /* Sol Taraftaki Klan Listesi - Biraz Daha Ortaya Yakın */
         #klan-listesi { 
-            position: fixed; left: 15px; top: 15px; z-index: 40; 
-            pointer-events: none; text-shadow: 2px 2px 4px #000;
+            position: fixed; left: 20px; top: 15%; z-index: 40; 
+            pointer-events: none; text-shadow: 2px 2px 5px #000;
         }
-        .klan-item { font-weight: bold; font-size: 14px; margin-bottom: 5px; letter-spacing: 1px; }
+        .klan-item { font-weight: bold; font-size: 16px; margin-bottom: 8px; letter-spacing: 1px; }
 
         /* Arayüz */
         #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 10px; text-align: center; z-index: 50; border-bottom: 1px solid rgba(46, 204, 113, 0.3); }
         #timer { font-size: 18px; font-weight: bold; }
 
+        /* YEŞİL TAKİP OKU */
+        #tracker-arrow {
+            position: fixed; width: 0; height: 0;
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-bottom: 25px solid #2ecc71; z-index: 90; display: none;
+            filter: drop-shadow(0 0 8px #2ecc71); pointer-events: none;
+        }
+
         /* Harita */
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; -webkit-overflow-scrolling: touch; }
         #map { width: 15000px; height: 8000px; position: relative; }
         #map-img { width: 100%; height: 100%; display: block; }
         
         /* Karakter */
-        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: all 0.5s; }
+        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: left 0.5s, top 0.5s; }
         .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; color: #fff; }
+        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; color: #fff; text-shadow: 1px 1px 2px #000; }
 
         canvas { display: none; }
     </style>
@@ -39,14 +46,16 @@
 <body>
 
 <canvas id="mapCanvas"></canvas>
+<div id="tracker-arrow"></div>
 
 <div id="klan-listesi">
-    <div class="klan-item" style="color: #2ecc71;">AVAR</div>
-    <div class="klan-item" style="color: #9b59b6;">DEVLET-İ ALİYYE-İ İSLAM</div>
-    <div class="klan-item" style="color: #e74c3c;">SPARTA</div>
-    <div class="klan-item" style="color: #556b2f;">VAMPİRE EMPİRE</div>
-    <div class="klan-item" style="color: #ffc0cb;">NOR</div>
-    <div class="klan-item" style="color: #ff0000;">CRM</div>
+    <div style="color:#2ecc71; font-size: 12px; opacity: 0.7; margin-bottom: 10px;">KLAN SIRALAMASI</div>
+    <div class="klan-item" style="color: #2ecc71;">1- AVAR</div>
+    <div class="klan-item" style="color: #9b59b6;">2- DEVLET-İ ALİYYE-İ İSLAM</div>
+    <div class="klan-item" style="color: #e74c3c;">3- SPARTA</div>
+    <div class="klan-item" style="color: #556b2f;">4- VAMPİRE EMPİRE</div>
+    <div class="klan-item" style="color: #ffc0cb;">5- NOR</div>
+    <div class="klan-item" style="color: #ff0000;">6- CRM</div>
 </div>
 
 <div id="login">
@@ -79,7 +88,7 @@
 </div>
 
 <script>
-    const adminName = "Lord"; // Bu ismi yazarsan sayı yasağı kalkar
+    const adminName = "Lord"; 
     let x = 0, y = 0;
     const SIZE = 80;
     let lastMoveTime = 0;
@@ -88,6 +97,8 @@
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
+    const player = document.getElementById('player');
+    const arrow = document.getElementById('tracker-arrow');
 
     function basla() {
         const nameInput = document.getElementById('pName').value.trim();
@@ -95,29 +106,30 @@
         const kColor = klanSelect.options[klanSelect.selectedIndex].dataset.color;
 
         if(!nameInput || !klanSelect.value) return alert("İsim ve Klan seçiniz!");
-        if(nameInput !== adminName && /\d/.test(nameInput)) return alert("Sayı yasak!");
+        if(nameInput !== adminName && /\d/.test(nameInput)) return alert("Sadece Lord sayı kullanabilir!");
 
-        // Harita verisini işle
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
 
-        // RASTGELE BEYAZ BÖLGEDE BAŞLAT
         findSafeStart();
 
         document.getElementById('nameTag').innerText = nameInput;
         document.getElementById('nameTag').style.backgroundColor = kColor;
         document.getElementById('login').style.display = 'none';
-        document.getElementById('player').style.display = 'flex';
+        player.style.display = 'flex';
         
         updateUnit();
-        document.getElementById('player').scrollIntoView({ block: 'center', inline: 'center' });
+        setTimeout(() => {
+            player.scrollIntoView({ block: 'center', inline: 'center' });
+        }, 100);
+
+        requestAnimationFrame(updateArrow);
     }
 
     function isSea(checkX, checkY) {
         const sampleX = (checkX * SIZE / 15000) * 1500;
         const sampleY = (checkY * SIZE / 8000) * 800;
         const p = ctx.getImageData(sampleX, sampleY, 1, 1).data;
-        // Eğer renk siyah/koyu ise denizdir (Parlaklık kontrolü)
         return (p[0] < 150 && p[1] < 150 && p[2] < 150);
     }
 
@@ -134,7 +146,6 @@
     }
 
     function updateUnit() {
-        const p = document.getElementById('player');
         const icon = document.getElementById('pIcon');
         const inSea = isSea(x, y);
 
@@ -146,8 +157,27 @@
             currentCooldown = 5000;
         }
 
-        p.style.left = (x * SIZE) + "px";
-        p.style.top = (y * SIZE) + "px";
+        player.style.left = (x * SIZE) + "px";
+        player.style.top = (y * SIZE) + "px";
+    }
+
+    function updateArrow() {
+        const pRect = player.getBoundingClientRect();
+        const vW = window.innerWidth, vH = window.innerHeight;
+
+        if (pRect.left >= 0 && pRect.right <= vW && pRect.top >= 0 && pRect.bottom <= vH) {
+            arrow.style.display = 'none';
+        } else {
+            arrow.style.display = 'block';
+            let arrowX = Math.min(Math.max(pRect.left + 30, 20), vW - 40);
+            let arrowY = Math.min(Math.max(pRect.top + 30, 80), vH - 40);
+            arrow.style.left = arrowX + "px";
+            arrow.style.top = arrowY + "px";
+
+            const angle = Math.atan2((pRect.top + 30) - arrowY, (pRect.left + 30) - arrowX);
+            arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
+        }
+        requestAnimationFrame(updateArrow);
     }
 
     document.getElementById('map').onclick = function(e) {
@@ -168,7 +198,7 @@
         const diff = Date.now() - lastMoveTime;
         const timerDiv = document.getElementById('timer');
         if (diff < currentCooldown) {
-            timerDiv.innerText = "İNTİKAL: " + Math.ceil((currentCooldown - diff) / 1000) + "s";
+            timerDiv.innerText = "HAREKET: " + Math.ceil((currentCooldown - diff) / 1000) + "s";
             timerDiv.style.color = "#ff4757";
         } else {
             timerDiv.innerText = "HAREKETE HAZIR";
