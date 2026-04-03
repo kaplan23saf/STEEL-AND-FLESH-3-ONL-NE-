@@ -32,7 +32,6 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
-        /* YENİ: SOLDAKİ KLAN LİSTESİ */
         #clan-list {
             position: fixed; left: 15px; top: 60px; width: 160px;
             background: rgba(0, 0, 0, 0.85); border: 1px solid rgba(46, 204, 113, 0.5);
@@ -219,10 +218,14 @@
         document.getElementById('build-menu').style.display = 'block';
     }
 
-    // YENİ İNŞAAT FONKSİYONU (Anında ve 4 Kare Mesafe Şartlı)
+    // GÜNCELLENEN İNŞAAT FONKSİYONU
     async function startBuild(typeLabel, icon) {
-        // En az 4 kare mesafe kontrolü
-        const tooClose = structures.some(s => Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2)) < 4);
+        // BURASI DEĞİŞTİ: Hem DB'deki hem de o anki yerel binaları birleştirip kontrol ediyoruz!
+        const allCurrentStructures = [...structures, ...localStructures];
+        
+        // Formül değişti: X ve Y ekseninde aralarında en az 4 kare fark olmak zorunda!
+        const tooClose = allCurrentStructures.some(s => Math.abs(s.x - x) < 4 && Math.abs(s.y - y) < 4);
+        
         if(tooClose) {
             addNotification("⚠️ Çok Yakın! Diğer yapılardan en az 4 kare uzaklaşmalısın.", "#e74c3c");
             document.getElementById('build-menu').style.display = 'none';
@@ -234,21 +237,18 @@
 
         document.getElementById('build-menu').style.display = 'none';
 
-        // Format: İsim||Renk||Eserİsmi
         const saveString = `${myName}||${myColor}||${bName}`;
         
-        // Yerel olarak anında basıyoruz
         localStructures.push({ x: x, y: y, type: icon, owner_name: saveString });
         renderBuildingsOnly();
         
         broadcastLog(`[${myKlan}] ${myName}, ${x},${y} konumunda <b>${bName}</b> (${icon}) inşa etti!`, myColor);
 
-        // Arka planda veritabanına atıyoruz
         await supabaseClient
             .from('structures')
             .insert([{ owner_name: saveString, type: icon, x: x, y: y }]);
 
-        loadWorldData(); // Senkronize et
+        loadWorldData(); 
     }
 
     function updateUnit() {
@@ -333,7 +333,6 @@
             b.className = 'building';
             b.style.left = (s.x * SIZE) + "px"; b.style.top = (s.y * SIZE) + "px";
             
-            // Eser İsmi klan renginde yazacak, oyuncunun ismi parantez içinde küçük gözükecek
             b.innerHTML = `
                 <span class="build-icon">${s.type}</span>
                 <span class="build-owner-tag" style="color:${p[1]}; border-color:${p[1]}">
@@ -362,20 +361,17 @@
 
         renderBuildingsOnly();
 
-        // YENİ: KLAN LİSTESİNİ GÜNCELLE
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
         const clans = {};
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
-                // Son 2 dakika içinde aktif olanları oyuncu say
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
                     if(!clans[p.klan]) clans[p.klan] = { color: p.color, members: [] };
                     clans[p.klan].members.push(p.name);
                 }
 
-                // Diğer oyuncuları haritaya bas
                 if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 120000) return; 
                 const u = document.createElement('div');
                 u.className = 'other-unit';
@@ -387,7 +383,6 @@
                 mapDiv.appendChild(u);
             });
 
-            // Klan Listesi Div'ine bilgileri ekleme
             for (const klanName in clans) {
                 const c = clans[klanName];
                 const item = document.createElement('div');
