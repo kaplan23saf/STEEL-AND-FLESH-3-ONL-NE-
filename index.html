@@ -32,13 +32,24 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
+        /* --- KLAN LİSTESİ VE BUTONU --- */
         #clan-list {
-            position: fixed; left: 15px; top: 60px; width: 180px;
+            position: fixed; left: 15px; top: 60px; width: 200px;
             background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(46, 204, 113, 0.5);
-            padding: 12px; border-radius: 8px; z-index: 500;
-            max-height: 500px; overflow-y: auto;
+            padding: 10px; border-radius: 8px; z-index: 500;
             box-shadow: 0 0 15px rgba(0,0,0,0.7);
         }
+        #clan-toggle-btn {
+            width: 100%; background: #111; color: #2ecc71; border: 1px solid #2ecc71;
+            padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;
+            text-transform: uppercase; transition: 0.3s;
+        }
+        #clan-toggle-btn:hover { background: #2ecc71; color: #000; }
+        
+        #clans-container {
+            margin-top: 10px; max-height: 400px; overflow-y: auto; display: none; /* Başlangıçta gizli */
+        }
+        /* ------------------------------ */
 
         #zoom-controls {
             position: fixed; bottom: 20px; right: 20px; z-index: 500; display: flex; gap: 10px;
@@ -90,7 +101,7 @@
 </div>
 
 <div id="clan-list">
-    <h3 style="color:#2ecc71; font-size:15px; margin:0 0 12px 0; text-align:center; text-transform:uppercase; border-bottom:1px solid rgba(46,204,113,0.3); padding-bottom:5px;">Devletler / Klanlar</h3>
+    <button id="clan-toggle-btn" onclick="toggleClanList()">📜 KLANLAR LİSTESİ</button>
     <div id="clans-container"></div>
 </div>
 
@@ -115,12 +126,11 @@
     
     <select id="pKlan">
         <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
-        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam (Mor)</option>
-        <option value="SPARTA" data-color="#e74c3c">SPARTA (Kırmızı)</option>
-        <option value="VAMPİRE" data-color="#006400">VAMPİRE (Koyu Yeşil)</option>
-        <option value="NOR" data-color="#ffc0cb">NOR (Pembe)</option>
-        <option value="CRM" data-color="#8b0000">CRM (Koyu Kırmızı)</option>
-        <option value="NEW_CLAN" data-color="#ffffff">➕ Klan Oluştur...</option>
+        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#9b59b6">DEVLET-İ ALİYYE-İ İSLAM (Mor)</option>
+        <option value="SPARTA" data-color="#e67e22">SPARTA (Turuncu)</option>
+        <option value="CRM" data-color="#e74c3c">CRM (Kırmızı)</option>
+        <option value="VAMPİRE" data-color="#555555">VAMPİRE (Füme)</option>
+        <option value="NEW_CLAN" data-color="#ffffff">➕ Yeni Klan Oluştur...</option>
     </select>
     
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
@@ -154,13 +164,22 @@
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
+    // KLAN LİSTESİNİ AÇIP KAPATAN FONKSİYON
+    function toggleClanList() {
+        const container = document.getElementById('clans-container');
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
     function basla() {
         myName = document.getElementById('pName').value.trim();
         const kSelect = document.getElementById('pKlan');
         
         if(!myName) return alert("Komutan, tarihe geçecek bir isim seçmelisin!");
 
-        // YENİ: KLAN OLUŞTURMA MANTIĞI
         if(kSelect.value === "NEW_CLAN") {
             const customClan = prompt("Oluşturmak istediğiniz klanın adını girin:");
             if(!customClan || customClan.trim() === "") {
@@ -168,7 +187,6 @@
                 return;
             }
             myKlan = customClan.trim();
-            // Rastgele canlı ve görünür bir renk üretir (HSL formatında)
             myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
         } else {
             myKlan = kSelect.value;
@@ -378,20 +396,19 @@
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
         
-        // Varsayılan Klanlar
+        // GÜNCELLENEN VARSAYILAN KLANLAR
         const clans = {
             "AVAR": { color: "#2ecc71", members: [] },
-            "Devleti Aliyye İslam": { color: "#9b59b6", members: [] },
-            "SPARTA": { color: "#e74c3c", members: [] },
-            "VAMPİRE": { color: "#006400", members: [] },
-            "NOR": { color: "#ffc0cb", members: [] },
-            "CRM": { color: "#8b0000", members: [] }
+            "DEVLET-İ ALİYYE-İ İSLAM": { color: "#9b59b6", members: [] },
+            "SPARTA": { color: "#e67e22", members: [] },
+            "CRM": { color: "#e74c3c", members: [] },
+            "VAMPİRE": { color: "#555555", members: [] }
         };
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    // YENİ: Eğer klan varsayılan listede yoksa (yeni açıldıysa) listeye ekle
+                    // Sistemde olmayan yeni bir klan oluşturulduysa dinamik olarak ekle
                     if(!clans[p.klan]) {
                         clans[p.klan] = { color: p.color || "#ffffff", members: [] };
                     }
@@ -409,18 +426,11 @@
                 mapDiv.appendChild(u);
             });
 
+            // LİSTEYİ OLUŞTUR VE KUTUYA EKLE
             for (const klanName in clans) {
                 const c = clans[klanName];
                 const item = document.createElement('div');
                 item.style.marginBottom = "10px";
                 item.innerHTML = `
-                    <div style="color:${c.color}; font-size:12px; font-weight:bold;">${klanName}</div>
-                    <div style="color:#aaa; font-size:10px;">${c.members.length > 0 ? c.members.join(', ') : '<i>Üye yok</i>'}</div>
-                `;
-                clansContainer.appendChild(item);
-            }
-        }
-    }
-</script>
-</body>
-</html>
+                    <div style="color:${c.color}; font-size:13px; font-weight:bold; letter-spacing:0.5px;">${klanName}</div>
+                    <div style="color:#aaa; font-size:11px; margin-top:2px;">${c.members.length > 0 ? c.memb
