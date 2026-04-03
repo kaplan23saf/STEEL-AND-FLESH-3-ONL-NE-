@@ -3,41 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Kara ve Deniz Savaşları</title>
+    <title>Klanlar Savaşı - Lord Paneli</title>
     <style>
-        body { margin: 0; background: #000; color: #2ecc71; font-family: sans-serif; overflow: hidden; }
-        #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 220px; text-align: center; border-radius: 8px; }
-        button { padding: 10px 25px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; pointer-events: none; }
+        body { margin: 0; background: #000b1a; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
+        
+        /* Giriş ve Klan Seçimi */
+        #login { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 260px; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 18px; }
+
+        /* Sol Taraftaki Klan Listesi */
+        #klan-listesi { 
+            position: fixed; left: 10px; top: 80px; width: 220px; 
+            background: rgba(0,0,0,0.85); border: 1px solid #2ecc71; 
+            padding: 10px; z-index: 40; border-radius: 5px;
+            pointer-events: none;
+        }
+        .klan-item { margin-bottom: 8px; font-weight: bold; font-size: 13px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+
+        /* Arayüz */
+        #ui { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; text-align: center; border-bottom: 1px solid #2ecc71; z-index: 50; }
         #timer { font-size: 18px; font-weight: bold; color: #ff4757; }
+
+        /* Harita ve Karakter */
         #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
-        #map { width: 15000px; height: 8000px; position: relative; }
-        #map-img { width: 100%; height: 100%; display: block; }
-        .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: all 0.5s; }
-        .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px gold); }
-        .unit-name { font-size: 12px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border: 1px solid #2ecc71; border-radius: 4px; white-space: nowrap; }
-        canvas { display: none; } /* Renk tespiti için gizli tuval */
+        #map { width: 15000px; height: 8000px; background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg'); background-size: 100% 100%; position: relative; }
+        
+        .unit { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; transition: all 0.5s; }
+        .unit-icon { font-size: 45px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+        .unit-name { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: bold; margin-top: 5px; border: 1px solid rgba(255,255,255,0.3); }
+
+        #tracker-arrow { position: fixed; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #2ecc71; z-index: 60; display: none; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<canvas id="colorDetector"></canvas>
+<div id="tracker-arrow"></div>
+
+<div id="klan-listesi">
+    <div style="color:#2ecc71; margin-bottom:10px; border-bottom:2px solid #2ecc71;">AKTİF KLANLAR</div>
+    <div class="klan-item" style="color: #2d5a27;">1- AVAR</div>
+    <div class="klan-item" style="color: #8e44ad;">2- DEVLET-İ ALİYYE-İ İSLAM</div>
+    <div class="klan-item" style="color: #e74c3c;">3- SPARTA</div>
+    <div class="klan-item" style="color: #4f6d5a;">4- VAMPİRE EMPİRE</div>
+    <div class="klan-item" style="color: #ff9ff3;">5- NOR</div>
+    <div class="klan-item" style="color: #ff0000;">6- CRM</div>
+</div>
 
 <div id="login">
-    <h1>STRATEJİ MERKEZİ</h1>
-    <input type="text" id="pName" placeholder="Komutan İsmi" oninput="this.value = this.value.replace(/[0-9]/g, '')">
+    <h1 style="color:#2ecc71;">SAVAŞ ODASI</h1>
+    <input type="text" id="pName" placeholder="Komutan İsmi">
+    <select id="pKlan">
+        <option value="">Klan Seçiniz...</option>
+        <option value="AVAR" data-color="#2d5a27">AVAR</option>
+        <option value="DEVLET-İ ALİYYE-İ İSLAM" data-color="#8e44ad">DEVLET-İ ALİYYE-İ İSLAM</option>
+        <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
+        <option value="VAMPİRE EMPİRE" data-color="#4f6d5a">VAMPİRE EMPİRE</option>
+        <option value="NOR" data-color="#ff9ff3">NOR</option>
+        <option value="CRM" data-color="#ff0000">CRM</option>
+    </select>
     <button onclick="basla()">SEFERE BAŞLA</button>
 </div>
 
 <div id="ui">
-    <div id="status">Bölge: Keşfediliyor...</div>
+    <div id="klan-info">Klan: Seçilmedi</div>
     <div id="timer">HAZIR</div>
 </div>
 
 <div id="viewport">
     <div id="map">
-        <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" class="unit" style="display:none;">
             <span id="pIcon" class="unit-icon">🏇</span>
             <span id="nameTag" class="unit-name"></span>
@@ -46,90 +80,94 @@
 </div>
 
 <script>
+    // --- LORD (ADMIN) AYARLARI ---
+    const adminIsmi = "Lord"; // BURAYA KENDİ İSMİNİ YAZ (Büyük/Küçük harf duyarlı)
+    
     let x = 150, y = 80;
     const SIZE = 80;
     let lastMoveTime = 0;
-    let currentCooldown = 5000;
-    let isSea = false;
-
-    const img = document.getElementById('map-img');
-    const canvas = document.getElementById('colorDetector');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    let currentKlan = null;
+    let isAdmin = false;
 
     function basla() {
-        const name = document.getElementById('pName').value.trim();
-        if(!name) return;
-        document.getElementById('nameTag').innerText = name;
+        const nameInput = document.getElementById('pName').value.trim();
+        const klanSelect = document.getElementById('pKlan');
+        const selectedKlan = klanSelect.value;
+        const klanColor = klanSelect.options[klanSelect.selectedIndex].dataset.color;
+
+        if(!nameInput || !selectedKlan) return alert("İsim ve Klan seçmelisiniz!");
+
+        // Lord (Admin) Kontrolü
+        isAdmin = (nameInput === adminIsmi);
+        
+        // Eğer admin değilsen ve isimde sayı varsa engelle
+        if(!isAdmin && /\d/.test(nameInput)) {
+            return alert("Sadece Yüce Lord ismine sayı yazabilir!");
+        }
+
+        document.getElementById('nameTag').innerText = nameInput;
+        document.getElementById('nameTag').style.backgroundColor = klanColor;
+        document.getElementById('klan-info').innerText = "Klan: " + selectedKlan;
+        document.getElementById('klan-info').style.color = klanColor;
+        
         document.getElementById('login').style.display = 'none';
         document.getElementById('player').style.display = 'flex';
         
-        // Harita verisini canvas'a çek (Renk tespiti için)
-        canvas.width = 1500; // Performans için küçük ölçek
-        canvas.height = 800;
-        ctx.drawImage(img, 0, 0, 1500, 800);
-        
         render();
         document.getElementById('player').scrollIntoView({ block: 'center', inline: 'center' });
-    }
-
-    function checkArea(targetX, targetY) {
-        // Haritadaki koordinatın rengini kontrol et
-        const mapW = 15000, mapH = 8000;
-        const sampleX = (targetX * SIZE / mapW) * canvas.width;
-        const sampleY = (targetY * SIZE / mapH) * canvas.height;
-        
-        const pixel = ctx.getImageData(sampleX, sampleY, 1, 1).data;
-        // pixel[0,1,2] -> R,G,B değerleri. Siyah/Koyu renkler düşük değerlerdir.
-        // Eğer renk çok koyuysa denizdir (Basit bir eşik değeri: 50)
-        return (pixel[0] < 100 && pixel[1] < 100 && pixel[2] < 100);
+        requestAnimationFrame(updateArrow);
     }
 
     function render() {
         const p = document.getElementById('player');
-        const icon = document.getElementById('pIcon');
-        const status = document.getElementById('status');
-        
-        isSea = checkArea(x, y);
-        
-        if(isSea) {
-            icon.innerText = "🚢";
-            currentCooldown = 10000;
-            status.innerText = "Bölge: Engin Denizler (10s)";
-            status.style.color = "#3498db";
-        } else {
-            icon.innerText = "🏇";
-            currentCooldown = 5000;
-            status.innerText = "Bölge: Kara Toprakları (5s)";
-            status.style.color = "#2ecc71";
-        }
-
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
     }
 
+    // Hareket Mekaniği
     document.getElementById('map').onclick = function(e) {
         const now = Date.now();
-        if (now - lastMoveTime < currentCooldown) return;
+        // Admin bekleme süresine takılmaz (İstersen kaldırabilirsin)
+        if (!isAdmin && (now - lastMoveTime < 5000)) return;
 
         const tx = Math.floor(e.offsetX / SIZE);
         const ty = Math.floor(e.offsetY / SIZE);
 
-        if (Math.abs(tx - x) + Math.abs(ty - y) === 1) {
+        // Admin her yere ışınlanabilir, normal oyuncu 1 tık ilerler
+        if (isAdmin || (Math.abs(tx - x) + Math.abs(ty - y) === 1)) {
             x = tx; y = ty;
             lastMoveTime = now;
             render();
         }
     };
 
+    // Yeşil Ok Takibi
+    function updateArrow() {
+        const p = document.getElementById('player');
+        const arrow = document.getElementById('tracker-arrow');
+        const pRect = p.getBoundingClientRect();
+        const vW = window.innerWidth, vH = window.innerHeight;
+
+        if (pRect.left >= 0 && pRect.right <= vW && pRect.top >= 0 && pRect.bottom <= vH) {
+            arrow.style.display = 'none';
+        } else {
+            arrow.style.display = 'block';
+            let arrowX = Math.min(Math.max(pRect.left + 30, 20), vW - 40);
+            let arrowY = Math.min(Math.max(pRect.top + 30, 80), vH - 40);
+            arrow.style.left = arrowX + "px"; arrow.style.top = arrowY + "px";
+            const angle = Math.atan2((pRect.top + 30) - arrowY, (pRect.left + 30) - arrowX);
+            arrow.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
+        }
+        requestAnimationFrame(updateArrow);
+    }
+
     setInterval(() => {
         const diff = Date.now() - lastMoveTime;
         const timerDiv = document.getElementById('timer');
-        if (diff < currentCooldown) {
-            timerDiv.innerText = "İNTİKAL: " + Math.ceil((currentCooldown - diff) / 1000) + "s";
-            timerDiv.style.color = "#ff4757";
+        if (diff < 5000) {
+            timerDiv.innerText = isAdmin ? "LORD YETKİSİ AKTİF" : "İNTİKAL: " + Math.ceil((5000 - diff) / 1000) + "s";
         } else {
             timerDiv.innerText = "HAREKETE HAZIR";
-            timerDiv.style.color = "#2ecc71";
         }
     }, 500);
 </script>
