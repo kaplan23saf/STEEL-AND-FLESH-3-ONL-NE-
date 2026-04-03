@@ -32,11 +32,13 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
+        /* SOLDAKİ SABİT KLAN LİSTESİ */
         #clan-list {
-            position: fixed; left: 15px; top: 60px; width: 160px;
-            background: rgba(0, 0, 0, 0.85); border: 1px solid rgba(46, 204, 113, 0.5);
-            padding: 10px; border-radius: 8px; z-index: 500;
-            max-height: 400px; overflow-y: auto;
+            position: fixed; left: 15px; top: 60px; width: 180px;
+            background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(46, 204, 113, 0.5);
+            padding: 12px; border-radius: 8px; z-index: 500;
+            max-height: 500px; overflow-y: auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.7);
         }
 
         #zoom-controls {
@@ -69,7 +71,7 @@
         .build-owner-tag { font-size: 9px; background: rgba(0,0,0,0.85); padding: 2px 5px; border-radius: 3px; white-space: nowrap; margin-top: 1px; text-align: center; border: 1px solid; font-weight: bold; }
 
         #login { position: fixed; inset: 0; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 280px; border-radius: 10px; font-size: 16px; }
+        input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 320px; border-radius: 10px; font-size: 16px; }
         button#start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; text-transform: uppercase; letter-spacing: 2px; }
 
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -89,7 +91,7 @@
 </div>
 
 <div id="clan-list">
-    <h3 style="color:#2ecc71; font-size:14px; margin:0 0 10px 0; text-align:center;">Klan Listesi</h3>
+    <h3 style="color:#2ecc71; font-size:15px; margin:0 0 12px 0; text-align:center; text-transform:uppercase; border-bottom:1px solid rgba(46,204,113,0.3); padding-bottom:5px;">Devletler / Klanlar</h3>
     <div id="clans-container"></div>
 </div>
 
@@ -109,16 +111,18 @@
 </div>
 
 <div id="login">
-    <h1 style="color: #2ecc71; letter-spacing: 5px; text-shadow: 0 0 20px #2ecc71;">ELAZIĞ CEPHESİ</h1>
+    <h1 style="color: #2ecc71; letter-spacing: 5px; text-shadow: 0 0 20px #2ecc71; font-size:2.5em; margin-bottom:30px;">ELAZIĞ CEPHESİ</h1>
     <input type="text" id="pName" placeholder="Kahraman İsmi">
+    
     <select id="pKlan">
         <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
-        <option value="D.A.İ" data-color="#9b59b6">D.A.İ (Mor)</option>
+        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam (Mor)</option>
         <option value="SPARTA" data-color="#e74c3c">SPARTA (Kırmızı)</option>
-        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE (Koyu Yeşil)</option>
+        <option value="VAMPİRE" data-color="#006400">VAMPİRE (Koyu Yeşil)</option>
         <option value="NOR" data-color="#ffc0cb">NOR (Pembe)</option>
-        <option value="CRM" data-color="#ff0000">CRM (Al)</option>
+        <option value="CRM" data-color="#8b0000">CRM (Koyu Kırmızı)</option>
     </select>
+    
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
 
@@ -218,16 +222,14 @@
         document.getElementById('build-menu').style.display = 'block';
     }
 
-    // GÜNCELLENEN İNŞAAT FONKSİYONU
     async function startBuild(typeLabel, icon) {
-        // BURASI DEĞİŞTİ: Hem DB'deki hem de o anki yerel binaları birleştirip kontrol ediyoruz!
         const allCurrentStructures = [...structures, ...localStructures];
         
-        // Formül değişti: X ve Y ekseninde aralarında en az 4 kare fark olmak zorunda!
-        const tooClose = allCurrentStructures.some(s => Math.abs(s.x - x) < 4 && Math.abs(s.y - y) < 4);
+        // YENİ: ARALARINDAKİ KARE SINIRI 20 YAPILDI
+        const tooClose = allCurrentStructures.some(s => Math.abs(s.x - x) < 20 && Math.abs(s.y - y) < 20);
         
         if(tooClose) {
-            addNotification("⚠️ Çok Yakın! Diğer yapılardan en az 4 kare uzaklaşmalısın.", "#e74c3c");
+            addNotification("⚠️ Çok Yakın! Diğer yapılardan en az 20 kare uzaklaşmalısın.", "#e74c3c");
             document.getElementById('build-menu').style.display = 'none';
             return;
         }
@@ -361,17 +363,29 @@
 
         renderBuildingsOnly();
 
+        // YENİ: KLAN LİSTESİ SOL TARAFTA SABİT ÇIKIYOR
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
-        const clans = {};
+        
+        const clans = {
+            "AVAR": { color: "#2ecc71", members: [] },
+            "Devleti Aliyye İslam": { color: "#9b59b6", members: [] },
+            "SPARTA": { color: "#e74c3c", members: [] },
+            "VAMPİRE": { color: "#006400", members: [] },
+            "NOR": { color: "#ffc0cb", members: [] },
+            "CRM": { color: "#8b0000", members: [] }
+        };
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
+                // Son 2 dakika içinde aktif olanları oyuncu say
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    if(!clans[p.klan]) clans[p.klan] = { color: p.color, members: [] };
-                    clans[p.klan].members.push(p.name);
+                    if(clans[p.klan]) {
+                        clans[p.klan].members.push(p.name);
+                    }
                 }
 
+                // Diğer oyuncuları haritaya bas
                 if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 120000) return; 
                 const u = document.createElement('div');
                 u.className = 'other-unit';
@@ -383,13 +397,14 @@
                 mapDiv.appendChild(u);
             });
 
+            // Sabit klan listesini doldurma
             for (const klanName in clans) {
                 const c = clans[klanName];
                 const item = document.createElement('div');
-                item.style.marginBottom = "8px";
+                item.style.marginBottom = "10px";
                 item.innerHTML = `
-                    <div style="color:${c.color}; font-size:11px; font-weight:bold;">${klanName} (${c.members.length})</div>
-                    <div style="color:#aaa; font-size:9px;">${c.members.join(', ')}</div>
+                    <div style="color:${c.color}; font-size:12px; font-weight:bold;">${klanName}</div>
+                    <div style="color:#aaa; font-size:10px;">${c.members.length > 0 ? c.members.join(', ') : '<i>Üye yok</i>'}</div>
                 `;
                 clansContainer.appendChild(item);
             }
