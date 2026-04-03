@@ -3,120 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klanlar - Elazığ Kesin Sürüm</title>
+    <title>Klanlar - Izgara Operasyonu</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
-        #clan-sidebar {
-            position: fixed; left: 15px; top: 85px; width: 120px;
-            background: rgba(0, 0, 0, 0.85); padding: 12px; border-radius: 8px;
-            border-left: 4px solid #2ecc71; z-index: 1500; pointer-events: none;
-        }
-        .sidebar-title { color: #2ecc71; font-weight: bold; border-bottom: 1px solid #333; margin-bottom: 8px; font-size: 12px; }
-        .clan-item { font-size: 11px; margin-bottom: 4px; font-weight: bold; }
-
-        #edge-tracker {
-            position: fixed; width: 0; height: 0; border-left: 12px solid transparent; 
-            border-right: 12px solid transparent; border-bottom: 25px solid #2ecc71;
-            z-index: 1000; display: none; pointer-events: none; filter: drop-shadow(0 0 8px #2ecc71);
-        }
-
-        #notification-container {
-            position: fixed; top: 10px; right: 10px; width: 280px; z-index: 2000;
-            display: flex; flex-direction: column; gap: 5px; pointer-events: none;
-        }
-        .notif {
-            background: rgba(0, 0, 0, 0.9); border-right: 5px solid #2ecc71;
-            padding: 10px; font-size: 11px; border-radius: 4px;
-            animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards;
-        }
-
-        #ui-top {
-            position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9);
-            padding: 12px; text-align: center; z-index: 1600; border-bottom: 1px solid #2ecc71;
-        }
-
-        #build-menu { 
-            position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            background: #0a0a0a; border: 2px solid #2ecc71; padding: 25px;
-            z-index: 2500; display: none; border-radius: 15px; text-align: center;
-        }
-        .build-btn { display: block; width: 220px; padding: 12px; margin: 8px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
-
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; scroll-behavior: smooth; }
+        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 12px; text-align: center; z-index: 1600; border-bottom: 1px solid #2ecc71; }
+        #notification-container { position: fixed; top: 10px; right: 10px; width: 280px; z-index: 2000; pointer-events: none; }
+        .notif { background: rgba(0,0,0,0.9); border-right: 5px solid #2ecc71; padding: 10px; font-size: 11px; margin-bottom: 5px; border-radius: 4px; animation: slideIn 0.3s ease; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000; }
         #map { width: 15000px; height: 8000px; position: relative; }
         #map-img { width: 100%; height: 100%; display: block; }
-        
         .building { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
         .build-icon { font-size: 45px; }
-        .build-tag { font-size: 10px; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; margin-top: 3px; border: 1px solid; text-align: center; }
-
-        #player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; cursor: pointer; transition: 0.5s; }
-        .other-player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
-        
-        .arrow-indicator { position: absolute; top: -35px; font-size: 25px; color: #f1c40f; animation: bounce 0.8s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-
+        .build-tag { font-size: 10px; background: rgba(0,0,0,0.85); padding: 2px 5px; border-radius: 4px; border: 1px solid; text-align: center; }
+        #player { position: absolute; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: 0.4s ease-out; }
+        #build-menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #0a0a0a; border: 2px solid #2ecc71; padding: 25px; z-index: 2500; display: none; border-radius: 15px; text-align: center; }
+        .build-btn { display: block; width: 220px; padding: 12px; margin: 8px; background: #222; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
         #login { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input, select { padding: 12px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 10px; width: 250px; }
-        button#start-btn { padding: 12px 40px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes fadeOut { to { opacity: 0; } }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
-<div id="edge-tracker"></div>
 <canvas id="mapCanvas"></canvas>
 <div id="notification-container"></div>
-
-<div id="clan-sidebar">
-    <div class="sidebar-title">KLANLAR</div>
-    <div class="clan-item" style="color:#2ecc71;">AVAR</div>
-    <div class="clan-item" style="color:#9b59b6;">D.A.İ</div>
-    <div class="clan-item" style="color:#e74c3c;">SPARTA</div>
-    <div class="clan-item" style="color:#556b2f;">VAMPİRE</div>
-    <div class="clan-item" style="color:#ffc0cb;">NOR</div>
-    <div class="clan-item" style="color:#ff0000;">CRM</div>
-</div>
-
 <div id="ui-top">
     <span id="move-timer" style="font-weight:bold; color:#2ecc71;">HAREKET: HAZIR</span>
-    <span id="build-status" style="margin-left:20px; color:#f1c40f; font-weight:bold;"></span>
+    <span id="build-status" style="margin-left:20px; color:#f1c40f;"></span>
 </div>
 
 <div id="build-menu">
-    <h3 style="color:#2ecc71; margin-top:0;">MİMARİ PLAN</h3>
+    <h3 style="color:#2ecc71;">YAPI İNŞA ET</h3>
     <button class="build-btn" onclick="startBuild('Köy', '🏡', 15)">Köy (15s)</button>
     <button class="build-btn" onclick="startBuild('Kale', '🏰', 30)">Kale (30s)</button>
-    <button class="build-btn" onclick="startBuild('Şehir', '🏙️', 45)">Şehir (45s)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="margin-top:10px; background:#c0392b; color:#fff; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;">İPTAL</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; background:none; border:none; cursor:pointer;">KAPAT</button>
 </div>
 
 <div id="login">
-    <h1 style="color: #2ecc71;">ELAZIĞ STRATEJİ</h1>
-    <input type="text" id="pName" placeholder="Karakter İsmi">
-    <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR</option>
-        <option value="D.A.İ" data-color="#9b59b6">D.A.İ</option>
-        <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
-        <option value="VAMPİRE" data-color="#556b2f">VAMPİRE</option>
-        <option value="NOR" data-color="#ffc0cb">NOR</option>
-        <option value="CRM" data-color="#ff0000">CRM</option>
-    </select>
-    <button id="start-btn" onclick="basla()">SEFERE ÇIK</button>
+    <h1 style="color:#2ecc71;">ELAZIĞ STRATEJİ</h1>
+    <input type="text" id="pName" placeholder="Karakter İsmi" style="padding:10px; margin:5px; width:200px;">
+    <button onclick="basla()" style="padding:10px 30px; background:#2ecc71; border:none; font-weight:bold;">BAŞLA</button>
 </div>
 
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
         <div id="player" style="display:none;" onclick="openBuildMenu()">
-            <div class="arrow-indicator">▼</div>
+            <div style="color:#f1c40f; margin-bottom:-10px;">▼</div>
             <span id="pIcon" style="font-size:45px;">🏇</span>
-            <span id="nameTag" style="font-size:11px; padding:2px 8px; border-radius:4px; font-weight:bold; margin-top:5px; color:#fff;"></span>
+            <span id="nameTag" style="font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;"></span>
         </div>
     </div>
 </div>
@@ -126,61 +62,32 @@
 
     let x = 0, y = 0;
     const SIZE = 80;
-    let lastMoveTime = 0;
-    let buildEndTime = 0;
-    let structures = []; 
-    let myId = localStorage.getItem('playerId') || Math.random().toString(36).substr(2, 9);
-    let myColor, myKlan, myName;
+    let buildEndTime = 0, lastMoveTime = 0;
+    let myId = Math.random().toString(36).substr(2, 9), myName = "Anonim", myColor = "#2ecc71";
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
-    async function basla() {
-        myName = document.getElementById('pName').value.trim();
-        const kSelect = document.getElementById('pKlan');
-        myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
-        myKlan = kSelect.value;
-        if(!myName) return alert("İsimsiz kahraman olmaz!");
-
-        canvas.width = 1500; canvas.height = 800;
-        ctx.drawImage(mapImg, 0, 0, 1500, 800);
-
-        x = Math.floor(Math.random() * 50) + 70;
-        y = Math.floor(Math.random() * 30) + 30;
-
+    function basla() {
+        myName = document.getElementById('pName').value.trim() || "Savaşçı";
+        x = 100; y = 50; // Başlangıç
         document.getElementById('login').style.display = 'none';
         document.getElementById('player').style.display = 'flex';
         document.getElementById('nameTag').innerText = myName;
-        document.getElementById('nameTag').style.backgroundColor = myColor;
+        document.getElementById('nameTag').style.background = myColor;
+        
+        // Harita verisini canvas'a işle (Deniz kontrolü için)
+        canvas.width = 1500; canvas.height = 800;
+        ctx.drawImage(mapImg, 0, 0, 1500, 800);
         
         updateUnit();
-        focusPlayer();
-        initMultiplayer();
-        requestAnimationFrame(updateEdgeTracker);
+        initLoop();
     }
 
     function checkIsSea(cx, cy) {
-        // Harita verisinden rengi oku (Siyah = Deniz)
         const pix = ctx.getImageData((cx * SIZE / 15000) * 1500, (cy * SIZE / 8000) * 800, 1, 1).data;
-        return (pix[0] < 150 && pix[1] < 150 && pix[2] < 150);
-    }
-
-    function updateEdgeTracker() {
-        const p = document.getElementById('player');
-        const tracker = document.getElementById('edge-tracker');
-        const rect = p.getBoundingClientRect();
-        const isOffScreen = rect.left < 0 || rect.right > window.innerWidth || rect.top < 0 || rect.bottom > window.innerHeight;
-
-        if (isOffScreen) {
-            tracker.style.display = 'block';
-            let tx = Math.min(Math.max(rect.left + 40, 20), window.innerWidth - 40);
-            let ty = Math.min(Math.max(rect.top + 40, 85), window.innerHeight - 40);
-            tracker.style.left = tx + 'px'; tracker.style.top = ty + 'px';
-            const angle = Math.atan2((rect.top + 40) - ty, (rect.left + 40) - tx);
-            tracker.style.transform = `rotate(${angle * (180 / Math.PI) - 90}deg)`;
-        } else { tracker.style.display = 'none'; }
-        requestAnimationFrame(updateEdgeTracker);
+        return (pix[0] < 140 && pix[1] < 140 && pix[2] < 140);
     }
 
     function openBuildMenu() {
@@ -191,61 +98,57 @@
     async function startBuild(typeLabel, finalIcon, duration) {
         // 1. Deniz Kontrolü
         if(checkIsSea(x, y)) {
-            addNotification("⚠️ Mühendisler su üstüne bina yapamaz! Karaya çıkın.", "#e74c3c");
-            document.getElementById('build-menu').style.display = 'none';
+            addNotification("⚠️ Deniz ortasına inşaat yapılamaz!", "red");
             return;
         }
 
-        // 2. Mesafe Kontrolü (Kesin 5 Kare Kuralı)
-        const { data: latestStr } = await supabaseClient.from('structures').select('x, y');
-        const checkList = latestStr || structures;
-        const tooClose = checkList.some(s => {
-            const dx = Math.abs(s.x - x);
-            const dy = Math.abs(s.y - y);
+        // 2. Koordinat Bazlı Mesafe Kontrolü (Tam sayı kare hesabı)
+        const { data: allStructures } = await supabaseClient.from('structures').select('x, y');
+        const tooClose = allStructures?.some(s => {
+            const dx = Math.abs(Math.floor(s.x) - Math.floor(x));
+            const dy = Math.abs(Math.floor(s.y) - Math.floor(y));
+            // Aynı karede değilse (0,0 değilse) ama 5 kareden yakınsa engelle
             return (dx === 0 && dy === 0) ? false : (dx < 5 && dy < 5);
         });
 
         if(tooClose) {
-            addNotification("⚠️ Çok Yakın! Diğer yapılara en az 5 kare mesafe bırakmalısın.", "#e74c3c");
-            document.getElementById('build-menu').style.display = 'none';
+            addNotification("⚠️ Bu alan çok kalabalık! Diğer yapılara 5 kare mesafe lazım.", "orange");
             return;
         }
 
-        const bName = prompt(`${typeLabel} için bir isim verin:`);
+        const bName = prompt("Yapı ismi:");
         if(!bName) return;
 
-        buildEndTime = Date.now() + (duration * 1000);
         document.getElementById('build-menu').style.display = 'none';
+        buildEndTime = Date.now() + (duration * 1000);
 
-        const saveString = `${myName}||${myColor}||${bName}`;
-        broadcastLog(`[${myKlan}] ${myName}, [${x},${y}] konumunda <b>${typeLabel}</b> inşaatına başladı! 🏗️`, myColor);
+        // 3. İNŞAATI BAŞLAT (VİNÇ SİMGESİ İLE)
+        const saveStr = `${myName}||${myColor}||${bName}`;
+        const { data: newBuild } = await supabaseClient.from('structures').insert({
+            owner_name: saveStr,
+            type: '🏗️',
+            x: Math.floor(x),
+            y: Math.floor(y)
+        }).select();
 
-        // Veritabanına VİNÇ (🏗️) olarak kaydet
-        const { data, error } = await supabaseClient.from('structures').insert({ owner_name: saveString, type: '🏗️', x: x, y: y }).select();
-        
-        if(data && data[0]) {
-            const bId = data[0].id;
-            const targetX = x;
-            const targetY = y;
-
+        if(newBuild && newBuild[0]) {
+            addNotification(`🏗️ ${typeLabel} inşaatı başladı...`, "yellow");
+            
+            // 4. SÜRE BİTİMİNDE DÖNÜŞÜM
             setTimeout(async () => {
-                // SÜRE BİTİNCE ASIL SİMGEYE DÖNÜŞTÜR
-                await supabaseClient.from('structures').update({ type: finalIcon }).eq('id', bId);
-                broadcastLog(`[${myKlan}] ${myName}, [${targetX},${targetY}] koordinatlarında <b>${bName}</b> yapısını tamamladı! ${finalIcon}`, myColor);
-                loadWorldData(); // Haritayı anında tazele
+                await supabaseClient.from('structures').update({ type: finalIcon }).eq('id', newBuild[0].id);
+                addNotification(`✅ ${bName} inşaatı tamamlandı!`, "#2ecc71");
+                loadData();
             }, duration * 1000);
         }
     }
 
     function updateUnit() {
         const p = document.getElementById('player');
-        p.style.left = (x * SIZE) + "px"; p.style.top = (y * SIZE) + "px";
+        p.style.left = (x * SIZE) + "px";
+        p.style.top = (y * SIZE) + "px";
         document.getElementById('pIcon').innerText = checkIsSea(x, y) ? "🚢" : "🏇";
-        supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
-        focusPlayer();
-    }
-
-    function focusPlayer() {
+        
         const vp = document.getElementById('viewport');
         vp.scrollTo((x * SIZE) - (window.innerWidth / 2), (y * SIZE) - (window.innerHeight / 2));
     }
@@ -254,78 +157,57 @@
         if(e.target.id !== 'map-img') return;
         const tx = Math.floor(e.offsetX / SIZE);
         const ty = Math.floor(e.offsetY / SIZE);
-        const dist = Math.abs(tx - x) + Math.abs(ty - y);
-
-        if(dist === 1) {
-            const now = Date.now();
-            const cd = checkIsSea(x, y) ? 10000 : 5000;
-            if(now - lastMoveTime < cd) return;
-            x = tx; y = ty; lastMoveTime = now;
+        
+        if(Math.abs(tx - x) + Math.abs(ty - y) === 1) {
+            const cd = checkIsSea(x, y) ? 8000 : 4000;
+            if(Date.now() - lastMoveTime < cd) return;
+            x = tx; y = ty; lastMoveTime = Date.now();
             updateUnit();
         }
     };
 
-    setInterval(() => {
-        const now = Date.now();
-        const mTimer = document.getElementById('move-timer');
-        const bStatus = document.getElementById('build-status');
-        const cd = checkIsSea(x, y) ? 10000 : 5000;
-        const diff = now - lastMoveTime;
-
-        mTimer.innerText = diff < cd ? `HAREKET: ${Math.ceil((cd-diff)/1000)}s` : "HAREKET: HAZIR";
-        mTimer.style.color = diff < cd ? "#e74c3c" : "#2ecc71";
-
-        if(now < buildEndTime) {
-            bStatus.innerText = `| İNŞAAT: ${Math.ceil((buildEndTime-now)/1000)}s`;
-        } else { bStatus.innerText = ""; }
-    }, 500);
-
-    function addNotification(msg, color) {
-        const container = document.getElementById('notification-container');
-        const n = document.createElement('div');
-        n.className = 'notif'; n.style.borderRightColor = color; n.innerHTML = msg;
-        container.appendChild(n);
-        setTimeout(() => n.remove(), 6000);
-    }
-
-    function broadcastLog(msg, color) {
-        addNotification(msg, color);
-        supabaseClient.channel('world-logs').send({ type: 'broadcast', event: 'new_log', payload: { msg, color } });
-    }
-
-    async function initMultiplayer() {
-        supabaseClient.channel('world-logs').on('broadcast', { event: 'new_log' }, (p) => addNotification(p.payload.msg, p.payload.color)).subscribe();
-        loadWorldData();
-        setInterval(loadWorldData, 5000);
-    }
-
-    async function loadWorldData() {
+    async function loadData() {
         const { data: dbStr } = await supabaseClient.from('structures').select('*');
-        const { data: dbPlr } = await supabaseClient.from('players').select('*');
         const mapDiv = document.getElementById('map');
-        
-        mapDiv.querySelectorAll('.building, .other-player').forEach(el => el.remove());
-        structures = dbStr || [];
+        mapDiv.querySelectorAll('.building').forEach(b => b.remove());
 
-        structures.forEach(s => {
-            let p = s.owner_name.split("||");
-            const b = document.createElement('div');
-            b.className = 'building';
-            b.style.left = (s.x * SIZE) + "px"; b.style.top = (s.y * SIZE) + "px";
-            b.innerHTML = `<span class="build-icon">${s.type}</span><span class="build-tag" style="color:${p[1]}; border-color:${p[1]}">${p[0]}<br><b>${p[2]||''}</b></span>`;
-            mapDiv.appendChild(b);
+        dbStr?.forEach(s => {
+            const pInfo = s.owner_name.split("||");
+            const bEl = document.createElement('div');
+            bEl.className = 'building';
+            bEl.style.left = (s.x * SIZE) + "px";
+            bEl.style.top = (s.y * SIZE) + "px";
+            bEl.innerHTML = `
+                <span class="build-icon">${s.type}</span>
+                <span class="build-tag" style="color:${pInfo[1]}; border-color:${pInfo[1]}">
+                    ${pInfo[0]}<br><b>${pInfo[2]||''}</b>
+                </span>`;
+            mapDiv.appendChild(bEl);
         });
+    }
 
-        if(dbPlr) {
-            dbPlr.forEach(p => {
-                if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 60000) return; 
-                const u = document.createElement('div');
-                u.className = 'other-player';
-                u.style.left = (p.x * SIZE) + "px"; u.style.top = (p.y * SIZE) + "px";
-                u.innerHTML = `<span style="font-size:40px;">🏇</span><span style="background:${p.color}; font-size:10px; padding:2px 5px; border-radius:3px; font-weight:bold; position:absolute; bottom:0; color:#fff;">${p.name}</span>`;
-                mapDiv.appendChild(u);
-            });
-        }
+    function addNotification(text, color) {
+        const container = document.getElementById('notification-container');
+        const div = document.createElement('div');
+        div.className = 'notif';
+        div.style.borderRightColor = color;
+        div.innerText = text;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 5000);
+    }
+
+    function initLoop() {
+        loadData();
+        setInterval(loadData, 5000);
+        setInterval(() => {
+            const diff = Date.now() - lastMoveTime;
+            const cd = checkIsSea(x, y) ? 8000 : 4000;
+            document.getElementById('move-timer').innerText = diff < cd ? `BEKLE: ${Math.ceil((cd-diff)/1000)}s` : "HAREKET: HAZIR";
+            
+            if(Date.now() < buildEndTime) {
+                document.getElementById('build-status').innerText = `| İNŞAAT SÜRÜYOR: ${Math.ceil((buildEndTime - Date.now())/1000)}s`;
+            } else { document.getElementById('build-status').innerText = ""; }
+        }, 500);
     }
 </script>
 </body>
