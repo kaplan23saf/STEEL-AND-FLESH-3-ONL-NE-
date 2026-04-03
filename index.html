@@ -32,7 +32,6 @@
             padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid rgba(46, 204, 113, 0.3);
         }
 
-        /* SOLDAKİ SABİT KLAN LİSTESİ */
         #clan-list {
             position: fixed; left: 15px; top: 60px; width: 180px;
             background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(46, 204, 113, 0.5);
@@ -121,6 +120,7 @@
         <option value="VAMPİRE" data-color="#006400">VAMPİRE (Koyu Yeşil)</option>
         <option value="NOR" data-color="#ffc0cb">NOR (Pembe)</option>
         <option value="CRM" data-color="#8b0000">CRM (Koyu Kırmızı)</option>
+        <option value="NEW_CLAN" data-color="#ffffff">➕ Klan Oluştur...</option>
     </select>
     
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
@@ -157,9 +157,23 @@
     function basla() {
         myName = document.getElementById('pName').value.trim();
         const kSelect = document.getElementById('pKlan');
-        myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
-        myKlan = kSelect.value;
+        
         if(!myName) return alert("Komutan, tarihe geçecek bir isim seçmelisin!");
+
+        // YENİ: KLAN OLUŞTURMA MANTIĞI
+        if(kSelect.value === "NEW_CLAN") {
+            const customClan = prompt("Oluşturmak istediğiniz klanın adını girin:");
+            if(!customClan || customClan.trim() === "") {
+                alert("Geçersiz klan adı!");
+                return;
+            }
+            myKlan = customClan.trim();
+            // Rastgele canlı ve görünür bir renk üretir (HSL formatında)
+            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
+        } else {
+            myKlan = kSelect.value;
+            myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
+        }
 
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
@@ -224,8 +238,6 @@
 
     async function startBuild(typeLabel, icon) {
         const allCurrentStructures = [...structures, ...localStructures];
-        
-        // YENİ: ARALARINDAKİ KARE SINIRI 20 YAPILDI
         const tooClose = allCurrentStructures.some(s => Math.abs(s.x - x) < 20 && Math.abs(s.y - y) < 20);
         
         if(tooClose) {
@@ -363,10 +375,10 @@
 
         renderBuildingsOnly();
 
-        // YENİ: KLAN LİSTESİ SOL TARAFTA SABİT ÇIKIYOR
         const clansContainer = document.getElementById('clans-container');
         clansContainer.innerHTML = '';
         
+        // Varsayılan Klanlar
         const clans = {
             "AVAR": { color: "#2ecc71", members: [] },
             "Devleti Aliyye İslam": { color: "#9b59b6", members: [] },
@@ -378,14 +390,14 @@
 
         if(dbPlayers) {
             dbPlayers.forEach(p => {
-                // Son 2 dakika içinde aktif olanları oyuncu say
                 if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    if(clans[p.klan]) {
-                        clans[p.klan].members.push(p.name);
+                    // YENİ: Eğer klan varsayılan listede yoksa (yeni açıldıysa) listeye ekle
+                    if(!clans[p.klan]) {
+                        clans[p.klan] = { color: p.color || "#ffffff", members: [] };
                     }
+                    clans[p.klan].members.push(p.name);
                 }
 
-                // Diğer oyuncuları haritaya bas
                 if(p.id === myId || Date.now() - new Date(p.last_seen).getTime() > 120000) return; 
                 const u = document.createElement('div');
                 u.className = 'other-unit';
@@ -397,7 +409,6 @@
                 mapDiv.appendChild(u);
             });
 
-            // Sabit klan listesini doldurma
             for (const klanName in clans) {
                 const c = clans[klanName];
                 const item = document.createElement('div');
