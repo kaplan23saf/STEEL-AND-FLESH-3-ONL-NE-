@@ -3,22 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elazığ Cephesi - v6.5 Kalıcı</title>
+    <title>Elazığ Cephesi - v6.6 Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
+        
+        /* Bildirimler */
         #notification-container { position: fixed; top: 15px; right: 15px; width: 260px; z-index: 999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-        .notif { background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71; padding: 10px 15px; font-size: 12px; border-radius: 5px; animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards; }
-        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid #2ecc71; }
-        #clan-list { position: fixed; left: 15px; top: 60px; width: 200px; background: rgba(15, 15, 15, 0.9); border: 2px solid #2ecc71; padding: 12px; border-radius: 8px; z-index: 1000; max-height: 70vh; overflow-y: auto; }
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000911; scroll-behavior: smooth; }
+        .notif { background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71; padding: 10px 15px; font-size: 12px; border-radius: 5px; animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid #2ecc71; font-weight: bold; }
+        
+        #clan-list { position: fixed; left: 15px; top: 60px; width: 200px; background: rgba(15, 15, 15, 0.95); border: 2px solid #2ecc71; padding: 12px; border-radius: 8px; z-index: 1000; max-height: 70vh; overflow-y: auto; }
+
+        /* İnşaat Menüsü */
+        #build-menu { 
+            position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            background: rgba(10,10,10,0.98); border: 3px solid #2ecc71; padding: 30px;
+            z-index: 1100; display: none; border-radius: 20px; text-align: center;
+        }
+        .build-btn { display: block; width: 250px; padding: 12px; margin: 10px; background: #1a1a1a; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; }
+        .build-btn:hover { background: #2ecc71; color: #000; }
+
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000911; }
         #map { width: 15000px; height: 8000px; position: relative; transform-origin: 0 0; }
         #map-img { width: 100%; height: 100%; display: block; opacity: 0.8; }
-        #player { position: absolute; width: 24px; height: 24px; display: none; flex-direction: column; align-items: center; z-index: 210; transition: all 0.5s linear; cursor: pointer; }
-        .other-unit { position: absolute; z-index: 100; display: flex; flex-direction: column; align-items: center; transition: all 1.9s linear; pointer-events: none; }
+        
+        /* Oyuncu ve Ok */
+        #player { 
+            position: absolute; width: 30px; height: 30px; 
+            display: none; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 200; transition: all 0.2s linear; cursor: pointer; 
+        }
+        .arrow-indicator { position: absolute; top: -20px; font-size: 16px; color: #f1c40f; animation: bounce 0.8s infinite; text-shadow: 0 0 5px #000; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        .building { position: absolute; width: 20px; height: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
+        .build-icon { font-size: 24px; }
+        .build-owner-tag { font-size: 10px; background: rgba(0,0,0,0.85); padding: 2px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid; font-weight: bold; }
+
         #login { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 320px; border-radius: 10px; }
         button#start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; }
+
+        .other-unit { position: absolute; z-index: 100; display: flex; flex-direction: column; align-items: center; transition: all 1.9s linear; pointer-events: none; }
+
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; } }
         canvas { display: none; }
@@ -28,17 +57,30 @@
 
 <canvas id="mapCanvas"></canvas>
 <div id="notification-container"></div>
-<div id="ui-top"><span id="move-timer">ORDU HAZIR</span></div>
-<div id="clan-list"><h3 style="color:#2ecc71; font-size:14px; margin:0;">KLANLAR</h3><div id="clans-container"></div></div>
+<div id="ui-top">ORDU KOMUTANLIĞI</div>
+
+<div id="clan-list">
+    <h3 style="color:#2ecc71; font-size:14px; margin:0 0 10px 0; border-bottom:1px solid #2ecc71;">KLANLAR VE OYUNCULAR</h3>
+    <div id="clans-container">Yükleniyor...</div>
+</div>
+
+<div id="build-menu">
+    <h2 style="color:#2ecc71;">YAPI İNŞA ET</h2>
+    <button class="build-btn" onclick="startBuild('Köy', '🏡')">Köy (🏡)</button>
+    <button class="build-btn" onclick="startBuild('Kale', '🏰')">Kale (🏰)</button>
+    <button class="build-btn" onclick="startBuild('Şehir', '🏯')">Şehir (🏯)</button>
+    <button class="build-btn" onclick="startBuild('Liman', '⚓')">Liman (⚓)</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; cursor:pointer; background:none; border:none; margin-top:15px; font-weight:bold;">İPTAL</button>
+</div>
 
 <div id="login">
     <h1 style="color: #2ecc71;">ELAZIĞ CEPHESİ</h1>
-    <p id="welcome-back" style="display:none; color:#aaa;">Tekrar hoş geldin, Komutan.</p>
+    <p id="welcome-msg" style="color:#888; margin-bottom:10px; display:none;">Kayıtlar bulundu, hoş geldin Komutan!</p>
     <input type="text" id="pName" placeholder="Kahraman İsmi">
     <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR</option>
-        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam</option>
-        <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
+        <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
+        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam (Mor)</option>
+        <option value="SPARTA" data-color="#e74c3c">SPARTA (Kırmızı)</option>
     </select>
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
@@ -46,7 +88,8 @@
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
-        <div id="player">
+        <div id="player" onclick="openBuildMenu()">
+            <div class="arrow-indicator">▼</div>
             <span id="pIcon" style="font-size:24px;">🏇</span>
             <span id="nameTag" style="font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; color:#fff;"></span>
         </div>
@@ -57,37 +100,37 @@
     const supabaseClient = window.supabase.createClient("https://nfyqinmktmmdurklsred.supabase.co", "Sb_publishable_M6G0bwXo3kkFf9wGY9xz_A_DlDWrvm8");
 
     let x = 0, y = 0, SIZE = 20, zoom = 1.0, lastMoveTime = 0;
+    let dbStructures = [];
     let myId = localStorage.getItem('playerId') || Math.random().toString(36).substr(2, 9);
     localStorage.setItem('playerId', myId);
+    let myColor, myKlan, myName;
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
-    // Önceki verileri kontrol et
-    async function checkExistingPlayer() {
+    async function checkUser() {
         const { data } = await supabaseClient.from('players').select('*').eq('id', myId).single();
         if(data) {
             document.getElementById('pName').value = data.name;
             document.getElementById('pKlan').value = data.klan;
-            document.getElementById('welcome-back').style.display = 'block';
+            document.getElementById('welcome-msg').style.display = 'block';
             x = data.x; y = data.y;
         }
     }
-    checkExistingPlayer();
+    checkUser();
 
     function basla() {
-        const myName = document.getElementById('pName').value.trim();
-        const kSelect = document.getElementById('pKlan');
+        myName = document.getElementById('pName').value.trim();
         if(!myName) return alert("İsim gerekli!");
 
-        const myKlan = kSelect.value;
-        const myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
+        const kSelect = document.getElementById('pKlan');
+        myKlan = kSelect.value;
+        myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
 
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
 
-        // Eğer yeni oyuncuysa rastgele karada başlat, eskiyse yerinde kalsın
         if(x === 0 && y === 0) {
             while(true) {
                 let rx = Math.floor(Math.random() * 600) + 50;
@@ -98,16 +141,16 @@
         }
 
         document.getElementById('login').style.display = 'none';
-        const p = document.getElementById('player');
-        p.style.display = 'flex';
+        const pDiv = document.getElementById('player');
+        pDiv.style.display = 'flex';
         document.getElementById('nameTag').innerText = myName;
         document.getElementById('nameTag').style.backgroundColor = myColor;
         
-        updateUnit(true); // Girişte veritabanına yaz
+        updateUnit();
         initMultiplayer();
     }
 
-    function updateUnit(forceUpdate = false) {
+    function updateUnit() {
         const p = document.getElementById('player');
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
@@ -116,17 +159,10 @@
         const isSea = (pix[0] < 160 && pix[1] < 160 && pix[2] < 160);
         document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
         
-        // Hareket eder etmez veritabanını güncelle
-        supabaseClient.from('players').upsert({ 
-            id: myId, 
-            name: document.getElementById('pName').value, 
-            klan: document.getElementById('pKlan').value, 
-            color: document.getElementById('pKlan').options[document.getElementById('pKlan').selectedIndex].dataset.color, 
-            x: x, 
-            y: y, 
-            last_seen: new Date().toISOString() 
-        }).then();
+        // Veritabanına anlık yaz
+        supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
 
+        // Ekranı odakla
         const vp = document.getElementById('viewport');
         vp.scrollTo((x * SIZE) - (window.innerWidth / 2), (y * SIZE) - (window.innerHeight / 2));
     }
@@ -138,7 +174,8 @@
         const ty = Math.floor(((e.clientY - rect.top) / zoom) / SIZE);
         
         const now = Date.now();
-        if(now - lastMoveTime < 1000) return;
+        const cd = document.getElementById('pIcon').innerText === "🚢" ? 4000 : 1500;
+        if(now - lastMoveTime < cd) return;
 
         if (tx > x) x++; else if (tx < x) x--;
         else if (ty > y) y++; else if (ty < y) y--;
@@ -148,42 +185,86 @@
         updateUnit();
     };
 
-    async function loadWorldData() {
-        const { data: players } = await supabaseClient.from('players').select('*');
-        const container = document.getElementById('clans-container');
-        const mapDiv = document.getElementById('map');
+    function openBuildMenu() {
+        if(document.getElementById('pIcon').innerText === "🚢") {
+            addNotif("⚠️ Denizde yapı inşa edilemez!", "#e74c3c");
+            return;
+        }
+        document.getElementById('build-menu').style.display = 'block';
+    }
+
+    async function startBuild(type, icon) {
+        const tooClose = dbStructures.some(s => Math.abs(s.x - x) < 15 && Math.abs(s.y - y) < 15);
+        if(tooClose) return addNotif("⚠️ Diğer yapılara çok yakın!", "#e74c3c");
+
+        const bName = prompt(`${type} adı:`);
+        if(!bName) return;
+
+        const saveStr = `${myName}||${myColor}||${bName}`;
+        document.getElementById('build-menu').style.display = 'none';
         
+        await supabaseClient.from('structures').insert([{ owner_name: saveStr, type: icon, x: x, y: y }]);
+        loadWorldData();
+    }
+
+    function renderBuildings() {
+        document.querySelectorAll('.building').forEach(b => b.remove());
+        dbStructures.forEach(s => {
+            const p = s.owner_name.split("||");
+            const div = document.createElement('div');
+            div.className = 'building';
+            div.style.left = (s.x * SIZE) + "px"; div.style.top = (s.y * SIZE) + "px";
+            div.innerHTML = `<span class="build-icon">${s.type}</span><span class="build-owner-tag" style="color:${p[1]}; border-color:${p[1]}">${p[2]}</span>`;
+            document.getElementById('map').appendChild(div);
+        });
+    }
+
+    async function loadWorldData() {
+        const { data: structs } = await supabaseClient.from('structures').select('*');
+        const { data: players } = await supabaseClient.from('players').select('*');
+        
+        if(structs) { dbStructures = structs; renderBuildings(); }
+
+        const container = document.getElementById('clans-container');
+        container.innerHTML = '';
         let clans = {};
+
         if(players) {
             players.forEach(p => {
-                // Diğer oyuncuları çiz (Çıksalar bile veritabanında oldukları için silinmezler)
+                // Diğer oyuncuları çiz
                 if(p.id !== myId) {
                     let u = document.getElementById('unit-' + p.id);
                     if(!u) {
                         u = document.createElement('div');
                         u.id = 'unit-' + p.id;
                         u.className = 'other-unit';
-                        u.innerHTML = `<span style="font-size:24px;">🏇</span><span style="background:${p.color}; font-size:9px; padding:2px; border-radius:3px;">${p.name}</span>`;
-                        mapDiv.appendChild(u);
+                        u.innerHTML = `<span style="font-size:24px;">🏇</span><span style="background:${p.color}; font-size:9px; padding:2px 5px; border-radius:3px; font-weight:bold;">${p.name}</span>`;
+                        document.getElementById('map').appendChild(u);
                     }
                     u.style.left = (p.x * SIZE) + "px";
                     u.style.top = (p.y * SIZE) + "px";
                 }
-                // Klan listesi güncelleme
                 if(!clans[p.klan]) clans[p.klan] = [];
                 clans[p.klan].push(p.name);
             });
 
-            container.innerHTML = '';
             for(let k in clans) {
-                container.innerHTML += `<p style="margin:5px 0; font-size:12px;"><b style="color:#2ecc71">${k}:</b> ${clans[k].join(', ')}</p>`;
+                container.innerHTML += `<div style="margin-bottom:5px;"><b style="color:#2ecc71">${k}:</b> <span style="font-size:11px; color:#ccc;">${clans[k].join(', ')}</span></div>`;
             }
         }
     }
 
+    function addNotif(msg, color) {
+        const container = document.getElementById('notification-container');
+        const n = document.createElement('div');
+        n.className = 'notif'; n.style.borderColor = color; n.innerHTML = msg;
+        container.appendChild(n);
+        setTimeout(() => n.remove(), 5000);
+    }
+
     function initMultiplayer() {
         loadWorldData();
-        setInterval(loadWorldData, 2000); // 2 saniyede bir herkesi senkronize et
+        setInterval(loadWorldData, 2000);
     }
 </script>
 </body>
