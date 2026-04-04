@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elazığ Cephesi - v5</title>
+    <title>Elazığ Cephesi - v5.1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
@@ -106,7 +106,7 @@
     <button class="build-btn" onclick="startBuild('Kale', '🏰')">Kale (🏰)</button>
     <button class="build-btn" onclick="startBuild('Şehir', '🏯')">Şehir (🏯)</button>
     <button class="build-btn" onclick="startBuild('Liman', '⚓')">Liman (⚓)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; cursor:pointer; background:none; border:none;">KAPAT</button>
+    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; cursor:pointer; background:none; border:none; margin-top: 15px; font-weight:bold;">KAPAT</button>
 </div>
 
 <div id="login">
@@ -127,7 +127,7 @@
         <div id="player" style="display:none;" onclick="openBuildMenu()">
             <div class="arrow-indicator">▼</div>
             <span id="pIcon" style="font-size:24px;">🏇</span>
-            <span id="nameTag"></span>
+            <span id="nameTag" style="font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-top: 2px; color: #fff; text-shadow: 1px 1px 2px #000;"></span>
         </div>
     </div>
 </div>
@@ -212,6 +212,13 @@
     };
 
     async function startBuild(type, icon) {
+        // Ekstra Güvenlik: Menü açık kalsa bile denizdeyse kurdurma
+        if(document.getElementById('pIcon').innerText === "🚢") {
+            addNotif("⚠️ Denizde yapı inşa edemezsin!", "#e74c3c");
+            document.getElementById('build-menu').style.display = 'none';
+            return;
+        }
+
         // 20 KARE MESAFE KONTROLÜ
         const tooClose = [...dbStructures, ...localStructures].some(s => Math.abs(s.x - x) < 20 && Math.abs(s.y - y) < 20);
         if(tooClose) {
@@ -311,7 +318,15 @@
 
     function adjustZoom(a) { zoom = Math.min(Math.max(zoom + a, 0.4), 3); document.getElementById('map').style.transform = `scale(${zoom})`; }
     function focusPlayer() { const vp = document.getElementById('viewport'); vp.scrollTo(((x * SIZE) * zoom) - (window.innerWidth / 2), ((y * SIZE) * zoom) - (window.innerHeight / 2)); }
-    function openBuildMenu() { document.getElementById('build-menu').style.display = 'block'; }
+    
+    /* GÜNCEL KISIM: Denizde menüyü açtırmıyoruz */
+    function openBuildMenu() { 
+        if(document.getElementById('pIcon').innerText === "🚢") {
+            addNotif("⚠️ Karaya ayak basmadan yapı inşa edemezsin!", "#e74c3c");
+            return;
+        }
+        document.getElementById('build-menu').style.display = 'block'; 
+    }
 </script>
 </body>
 </html>
