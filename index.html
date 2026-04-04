@@ -3,78 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elazığ Cephesi - v5.1</title>
+    <title>Elazığ Cephesi - v6.5 Kalıcı</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
-        
-        /* YEŞİL ÇUBUK - EKRAN DIŞI TAKİPÇİ */
-        #edge-tracker {
-            position: fixed; width: 0; height: 0; 
-            border-left: 15px solid transparent; border-right: 15px solid transparent;
-            border-bottom: 30px solid #2ecc71;
-            z-index: 1000; display: none; pointer-events: none;
-            filter: drop-shadow(0 0 10px #2ecc71);
-        }
-
-        #notification-container {
-            position: fixed; top: 15px; right: 15px; width: 260px; z-index: 999;
-            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-        }
-        .notif {
-            background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71;
-            padding: 10px 15px; font-size: 12px; border-radius: 5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards;
-        }
-
-        #ui-top {
-            position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8);
-            padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid #2ecc71;
-        }
-
-        /* KLAN LİSTESİ - SOLDA SABİT */
-        #clan-list {
-            position: fixed; left: 15px; top: 60px; width: 200px;
-            background: rgba(15, 15, 15, 0.95); border: 2px solid #2ecc71;
-            padding: 12px; border-radius: 8px; z-index: 1000;
-            max-height: 70vh; overflow-y: auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-        }
-
-        #zoom-controls {
-            position: fixed; bottom: 20px; right: 20px; z-index: 500; display: flex; gap: 10px;
-        }
-        .zoom-btn { background: #222; border: 2px solid #2ecc71; color: #fff; width: 45px; height: 45px; font-size: 20px; font-weight: bold; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        #build-menu { 
-            position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            background: rgba(10,10,10,0.98); border: 3px solid #2ecc71; padding: 30px;
-            z-index: 1100; display: none; border-radius: 20px; text-align: center;
-        }
-        .build-btn { display: block; width: 250px; padding: 12px; margin: 10px; background: #1a1a1a; border: 1px solid #2ecc71; color: #fff; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; }
-        .build-btn:hover { background: #2ecc71; color: #000; }
-
-        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000911; }
+        #notification-container { position: fixed; top: 15px; right: 15px; width: 260px; z-index: 999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .notif { background: rgba(0, 0, 0, 0.9); border-left: 5px solid #2ecc71; padding: 10px 15px; font-size: 12px; border-radius: 5px; animation: slideIn 0.3s ease, fadeOut 0.5s 4.5s forwards; }
+        #ui-top { position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; text-align: center; z-index: 500; border-bottom: 2px solid #2ecc71; }
+        #clan-list { position: fixed; left: 15px; top: 60px; width: 200px; background: rgba(15, 15, 15, 0.9); border: 2px solid #2ecc71; padding: 12px; border-radius: 8px; z-index: 1000; max-height: 70vh; overflow-y: auto; }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; background: #000911; scroll-behavior: smooth; }
         #map { width: 15000px; height: 8000px; position: relative; transform-origin: 0 0; }
         #map-img { width: 100%; height: 100%; display: block; opacity: 0.8; }
-        
-        #player { 
-            position: absolute; width: 24px; height: 24px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 200; transition: all 0.2s linear; cursor: pointer; 
-        }
-        .arrow-indicator { position: absolute; top: -15px; font-size: 14px; color: #f1c40f; animation: bounce 0.8s infinite; }
-        
-        .building { position: absolute; width: 20px; height: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
-        .build-icon { font-size: 24px; }
-        .build-owner-tag { font-size: 10px; background: rgba(0,0,0,0.85); padding: 2px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid; font-weight: bold; }
-
+        #player { position: absolute; width: 24px; height: 24px; display: none; flex-direction: column; align-items: center; z-index: 210; transition: all 0.5s linear; cursor: pointer; }
+        .other-unit { position: absolute; z-index: 100; display: flex; flex-direction: column; align-items: center; transition: all 1.9s linear; pointer-events: none; }
         #login { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         input, select { padding: 15px; border: 2px solid #2ecc71; background: #111; color: white; margin-bottom: 15px; width: 320px; border-radius: 10px; }
         button#start-btn { padding: 15px 60px; background: #2ecc71; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 18px; }
-
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; } }
         canvas { display: none; }
@@ -82,41 +26,19 @@
 </head>
 <body>
 
-<div id="edge-tracker"></div>
 <canvas id="mapCanvas"></canvas>
 <div id="notification-container"></div>
-
-<div id="ui-top">
-    <span id="move-timer">HAREKET: HAZIR</span>
-</div>
-
-<div id="clan-list">
-    <h3 style="color:#2ecc71; font-size:16px; margin:0 0 10px 0; border-bottom:1px solid #2ecc71;">KLAN LİSTESİ</h3>
-    <div id="clans-container">Yükleniyor...</div>
-</div>
-
-<div id="zoom-controls">
-    <button class="zoom-btn" onclick="adjustZoom(0.2)">+</button>
-    <button class="zoom-btn" onclick="adjustZoom(-0.2)">-</button>
-</div>
-
-<div id="build-menu">
-    <h2 style="color:#2ecc71;">YAPI İNŞA ET</h2>
-    <button class="build-btn" onclick="startBuild('Köy', '🏡')">Köy (🏡)</button>
-    <button class="build-btn" onclick="startBuild('Kale', '🏰')">Kale (🏰)</button>
-    <button class="build-btn" onclick="startBuild('Şehir', '🏯')">Şehir (🏯)</button>
-    <button class="build-btn" onclick="startBuild('Liman', '⚓')">Liman (⚓)</button>
-    <button onclick="document.getElementById('build-menu').style.display='none'" style="color:red; cursor:pointer; background:none; border:none; margin-top: 15px; font-weight:bold;">KAPAT</button>
-</div>
+<div id="ui-top"><span id="move-timer">ORDU HAZIR</span></div>
+<div id="clan-list"><h3 style="color:#2ecc71; font-size:14px; margin:0;">KLANLAR</h3><div id="clans-container"></div></div>
 
 <div id="login">
     <h1 style="color: #2ecc71;">ELAZIĞ CEPHESİ</h1>
+    <p id="welcome-back" style="display:none; color:#aaa;">Tekrar hoş geldin, Komutan.</p>
     <input type="text" id="pName" placeholder="Kahraman İsmi">
     <select id="pKlan">
-        <option value="AVAR" data-color="#2ecc71">AVAR (Yeşil)</option>
-        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam (Mor)</option>
-        <option value="SPARTA" data-color="#e74c3c">SPARTA (Kırmızı)</option>
-        <option value="NEW_CLAN" data-color="#ffffff">➕ Yeni Klan...</option>
+        <option value="AVAR" data-color="#2ecc71">AVAR</option>
+        <option value="Devleti Aliyye İslam" data-color="#9b59b6">Devleti Aliyye İslam</option>
+        <option value="SPARTA" data-color="#e74c3c">SPARTA</option>
     </select>
     <button id="start-btn" onclick="basla()">SAVAŞI BAŞLAT</button>
 </div>
@@ -124,10 +46,9 @@
 <div id="viewport">
     <div id="map">
         <img id="map-img" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" crossorigin="anonymous">
-        <div id="player" style="display:none;" onclick="openBuildMenu()">
-            <div class="arrow-indicator">▼</div>
+        <div id="player">
             <span id="pIcon" style="font-size:24px;">🏇</span>
-            <span id="nameTag" style="font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-top: 2px; color: #fff; text-shadow: 1px 1px 2px #000;"></span>
+            <span id="nameTag" style="font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; color:#fff;"></span>
         </div>
     </div>
 </div>
@@ -136,52 +57,57 @@
     const supabaseClient = window.supabase.createClient("https://nfyqinmktmmdurklsred.supabase.co", "Sb_publishable_M6G0bwXo3kkFf9wGY9xz_A_DlDWrvm8");
 
     let x = 0, y = 0, SIZE = 20, zoom = 1.0, lastMoveTime = 0;
-    let localStructures = [], dbStructures = [];
     let myId = localStorage.getItem('playerId') || Math.random().toString(36).substr(2, 9);
     localStorage.setItem('playerId', myId);
-    let myColor, myKlan, myName;
 
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const mapImg = document.getElementById('map-img');
 
+    // Önceki verileri kontrol et
+    async function checkExistingPlayer() {
+        const { data } = await supabaseClient.from('players').select('*').eq('id', myId).single();
+        if(data) {
+            document.getElementById('pName').value = data.name;
+            document.getElementById('pKlan').value = data.klan;
+            document.getElementById('welcome-back').style.display = 'block';
+            x = data.x; y = data.y;
+        }
+    }
+    checkExistingPlayer();
+
     function basla() {
-        myName = document.getElementById('pName').value.trim();
+        const myName = document.getElementById('pName').value.trim();
+        const kSelect = document.getElementById('pKlan');
         if(!myName) return alert("İsim gerekli!");
 
-        const kSelect = document.getElementById('pKlan');
-        if(kSelect.value === "NEW_CLAN") {
-            const c = prompt("Klan Adı:");
-            myKlan = c || "BAĞIMSIZ";
-            myColor = `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
-        } else {
-            myKlan = kSelect.value;
-            myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
-        }
+        const myKlan = kSelect.value;
+        const myColor = kSelect.options[kSelect.selectedIndex].dataset.color;
 
         canvas.width = 1500; canvas.height = 800;
         ctx.drawImage(mapImg, 0, 0, 1500, 800);
 
-        // Karada başlama kontrolü
-        while(true) {
-            let rx = Math.floor(Math.random() * 600) + 50;
-            let ry = Math.floor(Math.random() * 300) + 50;
-            const pix = ctx.getImageData((rx * SIZE / 15000) * 1500, (ry * SIZE / 8000) * 800, 1, 1).data;
-            if(!(pix[0] < 160 && pix[1] < 160 && pix[2] < 160)) { x = rx; y = ry; break; }
+        // Eğer yeni oyuncuysa rastgele karada başlat, eskiyse yerinde kalsın
+        if(x === 0 && y === 0) {
+            while(true) {
+                let rx = Math.floor(Math.random() * 600) + 50;
+                let ry = Math.floor(Math.random() * 300) + 50;
+                const pix = ctx.getImageData((rx * SIZE / 15000) * 1500, (ry * SIZE / 8000) * 800, 1, 1).data;
+                if(!(pix[0] < 160 && pix[1] < 160 && pix[2] < 160)) { x = rx; y = ry; break; }
+            }
         }
 
         document.getElementById('login').style.display = 'none';
-        document.getElementById('player').style.display = 'flex';
+        const p = document.getElementById('player');
+        p.style.display = 'flex';
         document.getElementById('nameTag').innerText = myName;
         document.getElementById('nameTag').style.backgroundColor = myColor;
         
-        updateUnit();
-        focusPlayer();
+        updateUnit(true); // Girişte veritabanına yaz
         initMultiplayer();
-        requestAnimationFrame(updateEdgeTracker);
     }
 
-    function updateUnit() {
+    function updateUnit(forceUpdate = false) {
         const p = document.getElementById('player');
         p.style.left = (x * SIZE) + "px";
         p.style.top = (y * SIZE) + "px";
@@ -190,7 +116,19 @@
         const isSea = (pix[0] < 160 && pix[1] < 160 && pix[2] < 160);
         document.getElementById('pIcon').innerText = isSea ? "🚢" : "🏇";
         
-        supabaseClient.from('players').upsert({ id: myId, name: myName, klan: myKlan, color: myColor, x: x, y: y, last_seen: new Date().toISOString() }).then();
+        // Hareket eder etmez veritabanını güncelle
+        supabaseClient.from('players').upsert({ 
+            id: myId, 
+            name: document.getElementById('pName').value, 
+            klan: document.getElementById('pKlan').value, 
+            color: document.getElementById('pKlan').options[document.getElementById('pKlan').selectedIndex].dataset.color, 
+            x: x, 
+            y: y, 
+            last_seen: new Date().toISOString() 
+        }).then();
+
+        const vp = document.getElementById('viewport');
+        vp.scrollTo((x * SIZE) - (window.innerWidth / 2), (y * SIZE) - (window.innerHeight / 2));
     }
 
     document.getElementById('map').onclick = function(e) {
@@ -200,8 +138,7 @@
         const ty = Math.floor(((e.clientY - rect.top) / zoom) / SIZE);
         
         const now = Date.now();
-        const cd = document.getElementById('pIcon').innerText === "🚢" ? 4000 : 2000;
-        if(now - lastMoveTime < cd) return;
+        if(now - lastMoveTime < 1000) return;
 
         if (tx > x) x++; else if (tx < x) x--;
         else if (ty > y) y++; else if (ty < y) y--;
@@ -211,121 +148,42 @@
         updateUnit();
     };
 
-    async function startBuild(type, icon) {
-        // Ekstra Güvenlik: Menü açık kalsa bile denizdeyse kurdurma
-        if(document.getElementById('pIcon').innerText === "🚢") {
-            addNotif("⚠️ Denizde yapı inşa edemezsin!", "#e74c3c");
-            document.getElementById('build-menu').style.display = 'none';
-            return;
-        }
-
-        // 20 KARE MESAFE KONTROLÜ
-        const tooClose = [...dbStructures, ...localStructures].some(s => Math.abs(s.x - x) < 20 && Math.abs(s.y - y) < 20);
-        if(tooClose) {
-            addNotif("⚠️ Çok Yakın! En az 20 kare mesafe bırakmalısın.", "#e74c3c");
-            return;
-        }
-
-        const bName = prompt(`${type} adı ne olsun?`);
-        if(!bName) return;
-
-        document.getElementById('build-menu').style.display = 'none';
-        const saveStr = `${myName}||${myColor}||${bName}`;
-        
-        localStructures.push({ x: x, y: y, type: icon, owner_name: saveStr });
-        renderBuildings();
-        
-        broadcastLog(`[${myKlan}] ${myName}, yeni bir ${type} kurdu: <b>${bName}</b>`, myColor);
-        await supabaseClient.from('structures').insert([{ owner_name: saveStr, type: icon, x: x, y: y }]);
-    }
-
-    function renderBuildings() {
-        const mapDiv = document.getElementById('map');
-        mapDiv.querySelectorAll('.building').forEach(b => b.remove());
-        
-        [...dbStructures, ...localStructures].forEach(s => {
-            const p = s.owner_name.split("||");
-            const div = document.createElement('div');
-            div.className = 'building';
-            div.style.left = (s.x * SIZE) + "px"; div.style.top = (s.y * SIZE) + "px";
-            div.innerHTML = `<span class="build-icon">${s.type}</span><span class="build-owner-tag" style="color:${p[1]}; border-color:${p[1]}">${p[2]}</span>`;
-            mapDiv.appendChild(div);
-        });
-    }
-
-    function updateEdgeTracker() {
-        const p = document.getElementById('player');
-        const tracker = document.getElementById('edge-tracker');
-        const rect = p.getBoundingClientRect();
-        const isOff = rect.left < 0 || rect.right > window.innerWidth || rect.top < 0 || rect.bottom > window.innerHeight;
-
-        if (isOff) {
-            tracker.style.display = 'block';
-            tracker.style.left = Math.min(Math.max(rect.left, 20), window.innerWidth - 40) + 'px';
-            tracker.style.top = Math.min(Math.max(rect.top, 80), window.innerHeight - 40) + 'px';
-        } else {
-            tracker.style.display = 'none';
-        }
-        requestAnimationFrame(updateEdgeTracker);
-    }
-
-    function addNotif(msg, color) {
-        const container = document.getElementById('notification-container');
-        const n = document.createElement('div');
-        n.className = 'notif'; n.style.borderColor = color; n.innerHTML = msg;
-        container.appendChild(n);
-        setTimeout(() => n.remove(), 5000);
-    }
-
     async function loadWorldData() {
-        const { data: structs } = await supabaseClient.from('structures').select('*');
         const { data: players } = await supabaseClient.from('players').select('*');
-        
-        if(structs) dbStructures = structs;
-        renderBuildings();
-
         const container = document.getElementById('clans-container');
-        container.innerHTML = '';
+        const mapDiv = document.getElementById('map');
         
         let clans = {};
         if(players) {
             players.forEach(p => {
-                if(Date.now() - new Date(p.last_seen).getTime() < 120000) {
-                    if(!clans[p.klan]) clans[p.klan] = { color: p.color, members: [] };
-                    clans[p.klan].members.push(p.name);
+                // Diğer oyuncuları çiz (Çıksalar bile veritabanında oldukları için silinmezler)
+                if(p.id !== myId) {
+                    let u = document.getElementById('unit-' + p.id);
+                    if(!u) {
+                        u = document.createElement('div');
+                        u.id = 'unit-' + p.id;
+                        u.className = 'other-unit';
+                        u.innerHTML = `<span style="font-size:24px;">🏇</span><span style="background:${p.color}; font-size:9px; padding:2px; border-radius:3px;">${p.name}</span>`;
+                        mapDiv.appendChild(u);
+                    }
+                    u.style.left = (p.x * SIZE) + "px";
+                    u.style.top = (p.y * SIZE) + "px";
                 }
+                // Klan listesi güncelleme
+                if(!clans[p.klan]) clans[p.klan] = [];
+                clans[p.klan].push(p.name);
             });
-            
-            for(let name in clans) {
-                const div = document.createElement('div');
-                div.style.marginBottom = "8px";
-                div.innerHTML = `<b style="color:${clans[name].color}">${name}</b><br><small>${clans[name].members.join(', ')}</small>`;
-                container.appendChild(div);
+
+            container.innerHTML = '';
+            for(let k in clans) {
+                container.innerHTML += `<p style="margin:5px 0; font-size:12px;"><b style="color:#2ecc71">${k}:</b> ${clans[k].join(', ')}</p>`;
             }
         }
     }
 
     function initMultiplayer() {
-        supabaseClient.channel('world-logs').on('broadcast', { event: 'new_log' }, (p) => addNotif(p.payload.msg, p.payload.color)).subscribe();
         loadWorldData();
-        setInterval(loadWorldData, 5000);
-    }
-
-    function broadcastLog(msg, color) {
-        addNotif(msg, color);
-        supabaseClient.channel('world-logs').send({ type: 'broadcast', event: 'new_log', payload: { msg, color } });
-    }
-
-    function adjustZoom(a) { zoom = Math.min(Math.max(zoom + a, 0.4), 3); document.getElementById('map').style.transform = `scale(${zoom})`; }
-    function focusPlayer() { const vp = document.getElementById('viewport'); vp.scrollTo(((x * SIZE) * zoom) - (window.innerWidth / 2), ((y * SIZE) * zoom) - (window.innerHeight / 2)); }
-    
-    /* GÜNCEL KISIM: Denizde menüyü açtırmıyoruz */
-    function openBuildMenu() { 
-        if(document.getElementById('pIcon').innerText === "🚢") {
-            addNotif("⚠️ Karaya ayak basmadan yapı inşa edemezsin!", "#e74c3c");
-            return;
-        }
-        document.getElementById('build-menu').style.display = 'block'; 
+        setInterval(loadWorldData, 2000); // 2 saniyede bir herkesi senkronize et
     }
 </script>
 </body>
